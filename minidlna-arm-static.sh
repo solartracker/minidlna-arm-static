@@ -4,6 +4,13 @@
 #
 # Raspberry Pi build script for MiniDLNA
 #
+# NOTE: Compiling MiniDLNA (and especially FFmpeg) on a Raspberry Pi 3B
+# can generate significant heat, often exceeding 80°C in stock cases.
+# Upgrading to an aluminum case with properly sized copper shims
+# and good thermal paste provides effective passive cooling that dramatically
+# improves heat dissipation, keeping CPU temperatures below 50°C and preventing
+# thermal throttling during long builds.
+#
 # Copyright (C) 2025 Richard Elwell
 #
 # This program is free software: you can redistribute it and/or modify

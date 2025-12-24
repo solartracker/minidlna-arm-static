@@ -131,7 +131,9 @@ mkdir -p "$SRC"
 MAKE="make -j$(grep -c ^processor /proc/cpuinfo)" # parallelism
 #MAKE="make -j1"                                  # one job at a time
 export PATH="$TOMATOWARE_SYSROOT/usr/bin:$TOMATOWARE_SYSROOT/usr/local/sbin:$TOMATOWARE_SYSROOT/usr/local/bin:$TOMATOWARE_SYSROOT/usr/sbin:$TOMATOWARE_SYSROOT/sbin:$TOMATOWARE_SYSROOT/bin"
-export PKG_CONFIG_PATH="$TOMATOWARE_SYSROOT/lib/pkgconfig"
+#export PKG_CONFIG_PATH="$TOMATOWARE_SYSROOT/lib/pkgconfig"
+#export PKG_CONFIG="pkg-config --static"
+
 
 ################################################################################
 # libogg-1.3.6
@@ -280,6 +282,8 @@ if [ ! -f "$FOLDER/__package_installed" ]; then
         --disable-shared \
         --disable-rpath \
         --disable-debugging \
+        --disable-profiling \
+        --disable-dependency-tracking \
         --prefix="$TOMATOWARE_SYSROOT"
 
     $MAKE
@@ -367,12 +371,14 @@ if [ ! -f "$FOLDER/__package_installed" ]; then
 fi
 
 ################################################################################
-# ffmpeg-8.0.1
+# ffmpeg-6.1.2
 
 PKG_MAIN=ffmpeg
 mkdir -p "$SRC/$PKG_MAIN" && cd "$SRC/$PKG_MAIN"
-DL="ffmpeg-8.0.1.tar.gz"
-DL_SHA256="ed1cfade43aab7711c88937a0afc15b7b22efdc528c6ff074b4027c55a3c175c"
+DL="ffmpeg-6.1.2.tar.gz"
+DL_SHA256="def310d21e40c39e6971a6bcd07fba78ca3ce39cc01ffda4dca382599dc06312"
+#DL="ffmpeg-8.0.1.tar.gz"
+#DL_SHA256="ed1cfade43aab7711c88937a0afc15b7b22efdc528c6ff074b4027c55a3c175c"
 FOLDER="${DL%.tar.gz*}"
 URL="https://ffmpeg.org/releases/$DL"
 
@@ -403,7 +409,7 @@ if [ ! -f "$FOLDER/__package_installed" ]; then
     FFMPEG_DECODERS="aac ac3 atrac3 h264 jpegls mp3 mpeg1video mpeg2video mpeg4 mpegvideo png wmav1 wmav2 svq3"
     FFMPEG_PARSERS="aac ac3 h264 mpeg4video mpegaudio mpegvideo"
     FFMPEG_PROTOCOLS="file"
-    FFMPEG_DISABLED_DEMUXERS="amr apc ape ass bethsoftvid bfi c93 daud dnxhd dsicin dxa gsm gxf idcin iff image2 image2pipe ingenient ipmovie lmlm4 mm mmf msnwc_tcp mtv mxf nsv nut oma pva rawvideo rl2 roq rpl segafilm shorten siff smacker sol str thp tiertexseq tta txd vmd voc wc3 wsaud wsvqa xa yuv4mpegpipe"
+    FFMPEG_DISABLED_DEMUXERS="amr apc ape ass bethsoftvid bfi c93 daud dnxhd dsicin dxa ffm gsm gxf idcin iff image2 image2pipe ingenient ipmovie lmlm4 mm mmf msnwc_tcp mtv mxf nsv nut oma pva rawvideo rl2 roq rpl segafilm shorten siff smacker sol str thp tiertexseq tta txd vmd voc wc3 wsaud wsvqa xa yuv4mpegpipe"
 
     ./configure \
         --arch=arm --cpu=cortex-a9 --disable-neon --disable-vfp --target-os=linux \
@@ -456,6 +462,7 @@ if [ ! -f "$FOLDER/__package_installed" ]; then
 
     CFLAGS="-I$TOMATOWARE_SYSROOT/include" \
     LDFLAGS="-L$TOMATOWARE_SYSROOT/lib -static" \
+    LIBS="-lbz2" \
     ./configure \
         --enable-static \
         --disable-rpath \
@@ -468,8 +475,7 @@ if [ ! -f "$FOLDER/__package_installed" ]; then
 
     # Stripping removes debug symbols and other metadata, shrinking the size by roughly 80%.
     # The executable programs will still be quite large because of static linking.
-#    [ -f "$TOMATOWARE_SYSROOT/sbin/smartctl" ] && strip "$TOMATOWARE_SYSROOT/sbin/smartctl"
-#    [ -f "$TOMATOWARE_SYSROOT/sbin/smartd" ] && strip "$TOMATOWARE_SYSROOT/sbin/smartd"
+    [ -f "$TOMATOWARE_SYSROOT/sbin/minidlnad" ] && strip "$TOMATOWARE_SYSROOT/sbin/minidlnad"
 
     touch __package_installed
 fi

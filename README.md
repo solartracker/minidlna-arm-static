@@ -18,7 +18,7 @@ Key features:
 
 MiniDLNA is perfect for home media streaming setups where simplicity, efficiency, and low resource usage are priorities.
 
-This is a statically linked version of MiniDLNA, built using Tomatoware. It runs on any ARMv7 Linux device without requiring shared libraries.
+This script builds a statically linked version of MiniDLNA, using Tomatoware. It runs on any ARMv7 Linux device without requiring shared libraries.
 
 ## What is Tomatoware?
 

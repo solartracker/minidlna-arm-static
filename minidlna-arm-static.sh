@@ -134,14 +134,14 @@ export PATH="$TOMATOWARE_SYSROOT/usr/bin:$TOMATOWARE_SYSROOT/usr/local/sbin:$TOM
 export PKG_CONFIG_PATH="$TOMATOWARE_SYSROOT/lib/pkgconfig"
 
 ################################################################################
-# flac-1.5.0
+# libogg-1.3.6
 
-PKG_MAIN=flac
+PKG_MAIN=libogg
 mkdir -p "$SRC/$PKG_MAIN" && cd "$SRC/$PKG_MAIN"
-DL="flac-1.5.0.tar.xz"
-DL_SHA256="f2c1c76592a82ffff8413ba3c4a1299b6c7ab06c734dee03fd88630485c2b920"
-FOLDER="${DL%.tar.xz*}"
-URL="https://ftp.osuosl.org/pub/xiph/releases/flac/$DL"
+DL="libogg-1.3.6.tar.gz"
+DL_SHA256="83e6704730683d004d20e21b8f7f55dcb3383cdf84c0daedf30bde175f774638"
+FOLDER="${DL%.tar.gz*}"
+URL="https://ftp.osuosl.org/pub/xiph/releases/ogg/$DL"
 
 if [ "$REBUILD_ALL" == "1" ]; then
     if [ -f "$FOLDER/Makefile" ]; then
@@ -155,21 +155,12 @@ if [ ! -f "$FOLDER/__package_installed" ]; then
 
     check_sha256 "$DL" "$DL_SHA256"
 
-    [ ! -d "$FOLDER" ] && tar xJvf "$DL"
+    [ ! -d "$FOLDER" ] && tar xzvf "$DL"
     cd "$FOLDER"
 
     ./configure \
         --enable-static \
         --disable-shared \
-        --disable-rpath \
-        --disable-doxygen-docs \
-        --disable-cpplibs \
-        --disable-avx \
-        --disable-stack-smash-protection \
-        --disable-64-bit-words \
-        --disable-oggtest \
-        --disable-examples \
-        --without-libiconv-prefix \
         --prefix="$TOMATOWARE_SYSROOT"
 
     $MAKE
@@ -216,14 +207,14 @@ if [ ! -f "$FOLDER/__package_installed" ]; then
 fi
 
 ################################################################################
-# libogg-1.3.6
+# flac-1.5.0
 
-PKG_MAIN=libogg
+PKG_MAIN=flac
 mkdir -p "$SRC/$PKG_MAIN" && cd "$SRC/$PKG_MAIN"
-DL="libogg-1.3.6.tar.gz"
-DL_SHA256="83e6704730683d004d20e21b8f7f55dcb3383cdf84c0daedf30bde175f774638"
-FOLDER="${DL%.tar.gz*}"
-URL="https://ftp.osuosl.org/pub/xiph/releases/ogg/$DL"
+DL="flac-1.5.0.tar.xz"
+DL_SHA256="f2c1c76592a82ffff8413ba3c4a1299b6c7ab06c734dee03fd88630485c2b920"
+FOLDER="${DL%.tar.xz*}"
+URL="https://ftp.osuosl.org/pub/xiph/releases/flac/$DL"
 
 if [ "$REBUILD_ALL" == "1" ]; then
     if [ -f "$FOLDER/Makefile" ]; then
@@ -237,12 +228,21 @@ if [ ! -f "$FOLDER/__package_installed" ]; then
 
     check_sha256 "$DL" "$DL_SHA256"
 
-    [ ! -d "$FOLDER" ] && tar xzvf "$DL"
+    [ ! -d "$FOLDER" ] && tar xJvf "$DL"
     cd "$FOLDER"
 
     ./configure \
         --enable-static \
         --disable-shared \
+        --disable-rpath \
+        --disable-doxygen-docs \
+        --disable-cpplibs \
+        --disable-avx \
+        --disable-stack-smash-protection \
+        --disable-64-bit-words \
+        --disable-oggtest \
+        --disable-examples \
+        --without-libiconv-prefix \
         --prefix="$TOMATOWARE_SYSROOT"
 
     $MAKE
@@ -425,7 +425,7 @@ if [ ! -f "$FOLDER/__package_installed" ]; then
 
     ./configure \
         --arch=arm --cpu=cortex-a9 --disable-neon --disable-vfp --target-os=linux \
-        --enable-shared --disable-shared --disable-doc \
+        --enable-static --disable-shared --disable-doc \
         --enable-gpl --enable-version3 --enable-nonfree \
         --enable-pthreads --enable-small --disable-encoders --disable-filters \
         --disable-muxers --disable-devices --disable-ffmpeg --disable-ffplay \
@@ -454,7 +454,8 @@ mkdir -p "$SRC/$PKG_MAIN" && cd "$SRC/$PKG_MAIN"
 DL="minidlna-1.3.3.tar.gz"
 DL_SHA256="39026c6d4a139b9180192d1c37225aa3376fdf4f1a74d7debbdbb693d996afa4"
 FOLDER="${DL%.tar.gz*}"
-URL="https://sourceforge.net/projects/minidlna/files/minidlna/1.3.3/$DL"
+#URL="https://sourceforge.net/projects/minidlna/files/minidlna/1.3.3/$DL"
+URL="https://downloads.sourceforge.net/project/minidlna/minidlna/1.3.3/$DL"
 
 if [ "$REBUILD_ALL" == "1" ]; then
     if [ -f "$FOLDER/Makefile" ]; then
@@ -477,6 +478,7 @@ if [ ! -f "$FOLDER/__package_installed" ]; then
         --enable-static \
         --disable-rpath \
         --disable-nls \
+        --disable-silent-rules \
         --prefix="$TOMATOWARE_SYSROOT"
 
     $MAKE

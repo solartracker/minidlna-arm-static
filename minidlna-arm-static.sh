@@ -420,7 +420,7 @@ if [ ! -f "$FOLDER/__package_installed" ]; then
     FFMPEG_DECODERS="aac ac3 atrac3 h264 jpegls mp3 mpeg1video mpeg2video mpeg4 mpegvideo png wmav1 wmav2 svq3"
     FFMPEG_PARSERS="aac ac3 h264 mpeg4video mpegaudio mpegvideo"
     FFMPEG_PROTOCOLS="file"
-    FFMPEG_DISABLED_DEMUXERS="amr apc ape ass bethsoftvid bfi c93 daud dnxhd dsicin dxa ffm gsm gxf idcin iff image2 image2pipe ingenient ipmovie lmlm4 mm mmf msnwc_tcp mtv mxf nsv nut oma pva rawvideo rl2 roq rpl segafilm shorten siff smacker sol str thp tiertexseq tta txd vmd voc wc3 wsaud wsvqa xa yuv4mpegpipe"
+    FFMPEG_DISABLED_DEMUXERS="amr apc ape ass bethsoftvid bfi c93 daud dnxhd dsicin dxa gsm gxf idcin iff image2 image2pipe ingenient ipmovie lmlm4 mm mmf msnwc_tcp mtv mxf nsv nut oma pva rawvideo rl2 roq rpl segafilm shorten siff smacker sol str thp tiertexseq tta txd vmd voc wc3 wsaud wsvqa xa yuv4mpegpipe"
 
     ./configure \
         --arch=arm --cpu=cortex-a9 --disable-neon --disable-vfp --target-os=linux \
@@ -470,8 +470,7 @@ if [ ! -f "$FOLDER/__package_installed" ]; then
     [ ! -d "$FOLDER" ] && tar xzvf "$DL"
     cd "$FOLDER"
 
-    CFLAGS="-I$TOMATOWARE_SYSROOT/include" \
-    LDFLAGS="-L$TOMATOWARE_SYSROOT/lib -static" \
+    LDFLAGS="-static" \
     LIBS="-lbz2" \
     ./configure \
         --enable-static \

@@ -239,7 +239,6 @@ if [ ! -f "$FOLDER/__package_installed" ]; then
         --disable-cpplibs \
         --disable-avx \
         --disable-stack-smash-protection \
-        --disable-64-bit-words \
         --disable-oggtest \
         --disable-examples \
         --without-libiconv-prefix \
@@ -252,14 +251,14 @@ if [ ! -f "$FOLDER/__package_installed" ]; then
 fi
 
 ################################################################################
-# libid3tag-0.16.3
+# libid3tag-0.15.1b
 
 PKG_MAIN=libid3tag
 mkdir -p "$SRC/$PKG_MAIN" && cd "$SRC/$PKG_MAIN"
-DL="0.16.3.tar.gz"
-DL_SHA256="0561009778513a95d91dac33cee8418d6622f710450a7cb56a74636d53b588cb"
-FOLDER="libid3tag-0.16.3"
-URL="https://codeberg.org/tenacityteam/libid3tag/archive/$DL"
+DL="libid3tag-0.15.1b.tar.gz"
+DL_SHA256="63da4f6e7997278f8a3fef4c6a372d342f705051d1eeb6a46a86b03610e26151"
+FOLDER="libid3tag-0.15.1b"
+URL="https://downloads.sourceforge.net/project/mad/libid3tag/0.15.1b/$DL"
 
 if [ "$REBUILD_ALL" == "1" ]; then
     if [ -f "$FOLDER/Makefile" ]; then
@@ -273,34 +272,18 @@ if [ ! -f "$FOLDER/__package_installed" ]; then
 
     check_sha256 "$DL" "$DL_SHA256"
 
-    if [ ! -d "$FOLDER" ]; then
-        rm -rf temp
-        mkdir -p temp
-        tar xzvf "$DL" -C temp
-        mv -f temp/* "$FOLDER"
-        rm -rf temp
-    fi
+    [ ! -d "$FOLDER" ] && tar xzvf "$DL"
     cd "$FOLDER"
 
-    rm -rf build
-    mkdir -p build
-    cd build
-
-    cmake \
-        -DCMAKE_INSTALL_PREFIX="$TOMATOWARE_SYSROOT" \
-        -DCMAKE_PREFIX_PATH="$TOMATOWARE_SYSROOT" \
-        -DCMAKE_VERBOSE_MAKEFILE=TRUE \
-        -DBUILD_SHARED_LIBS=OFF \
-        -DCMAKE_FIND_LIBRARY_SUFFIXES=".a" \
-        -DCMAKE_EXE_LINKER_FLAGS="-static" \
-        -DCMAKE_SHARED_LINKER_FLAGS="-static" \
-        -DCMAKE_MODULE_LINKER_FLAGS="-static" \
-        ../
+    ./configure \
+        --enable-static \
+        --disable-shared \
+        --disable-rpath \
+        --disable-debugging \
+        --prefix="$TOMATOWARE_SYSROOT"
 
     $MAKE
     make install
-
-    cd ..
 
     touch __package_installed
 fi
@@ -374,7 +357,6 @@ if [ ! -f "$FOLDER/__package_installed" ]; then
     ./configure \
         --enable-static \
         --disable-shared \
-        --disable-nls \
         --enable-maxmem=1 \
         --prefix="$TOMATOWARE_SYSROOT"
 

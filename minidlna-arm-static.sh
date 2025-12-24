@@ -2,14 +2,20 @@
 ################################################################################
 # minidlna-arm-static.sh
 #
-# Raspberry Pi build script for MiniDLNA
+# Raspberry Pi build script for a statically linked version of MiniDLNA media
+# server, capable of running on any ARMv7 Linux device.
 #
-# NOTE: Compiling MiniDLNA (and especially FFmpeg) on a Raspberry Pi 3B
-# can generate significant heat, often exceeding 80°C in stock cases.
-# Upgrading to an aluminum case with properly sized copper shims
-# and good thermal paste provides effective passive cooling that dramatically
-# improves heat dissipation, keeping CPU temperatures below 50°C and preventing
-# thermal throttling during long builds.
+# MiniDLNA (also known as ReadyMedia) is a lightweight, simple-to-configure
+# media server that implements the DLNA/UPnP-AV standard. It allows you to
+# stream music, videos, and photos from a Linux-based device, such as a
+# Raspberry Pi, to DLNA-compatible clients like smart TVs, game consoles, or
+# media players.
+#
+# NOTE: Compiling MiniDLNA (and especially FFmpeg) on a Raspberry Pi can
+# generate significant heat, often exceeding 80°C in stock cases. Upgrading to
+# an aluminum case with copper shims and good thermal paste provides effective
+# passive cooling that dramatically improves heat dissipation, keeping CPU
+# temperatures below 50°C and preventing thermal throttling during long builds.
 #
 # Copyright (C) 2025 Richard Elwell
 #

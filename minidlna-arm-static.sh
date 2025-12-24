@@ -390,8 +390,6 @@ PKG_MAIN=ffmpeg
 mkdir -p "$SRC/$PKG_MAIN" && cd "$SRC/$PKG_MAIN"
 DL="ffmpeg-6.1.2.tar.gz"
 DL_SHA256="def310d21e40c39e6971a6bcd07fba78ca3ce39cc01ffda4dca382599dc06312"
-#DL="ffmpeg-8.0.1.tar.gz"
-#DL_SHA256="ed1cfade43aab7711c88937a0afc15b7b22efdc528c6ff074b4027c55a3c175c"
 FOLDER="${DL%.tar.gz*}"
 URL="https://ffmpeg.org/releases/$DL"
 
@@ -455,7 +453,6 @@ mkdir -p "$SRC/$PKG_MAIN" && cd "$SRC/$PKG_MAIN"
 DL="minidlna-1.3.3.tar.gz"
 DL_SHA256="39026c6d4a139b9180192d1c37225aa3376fdf4f1a74d7debbdbb693d996afa4"
 FOLDER="${DL%.tar.gz*}"
-#URL="https://sourceforge.net/projects/minidlna/files/minidlna/1.3.3/$DL"
 URL="https://downloads.sourceforge.net/project/minidlna/minidlna/1.3.3/$DL"
 
 if [ "$REBUILD_ALL" == "1" ]; then

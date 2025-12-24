@@ -470,7 +470,6 @@ if [ ! -f "$FOLDER/__package_installed" ]; then
     [ ! -d "$FOLDER" ] && tar xzvf "$DL"
     cd "$FOLDER"
 
-    LDFLAGS="-static" \
     LIBS="-lbz2" \
     ./configure \
         --enable-static \

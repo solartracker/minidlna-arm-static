@@ -153,7 +153,7 @@ handle_configure_error() {
     local rc=$1
     #grep -R --include="config.log" --color=always "undefined reference" .
     find . -name "config.log" -exec grep -H "undefined reference" {} \;
-    exit $rc
+    return $rc
 }
 
 ################################################################################

@@ -147,6 +147,14 @@ export PATH="$TOMATOWARE_SYSROOT/usr/bin:$TOMATOWARE_SYSROOT/usr/local/sbin:$TOM
 #export PKG_CONFIG_PATH="$TOMATOWARE_SYSROOT/lib/pkgconfig"
 #export PKG_CONFIG="pkg-config --static"
 
+# If Autoconf/configure fails due to missing libraries or undefined symbols, you
+# immediately see all undefined references without having to manually search config.log
+handle_configure_error() {
+    local rc=$1
+    #grep -R --include="config.log" --color=always "undefined reference" .
+    find . -name "config.log" -exec grep -H "undefined reference" {} \;
+    exit $rc
+}
 
 ################################################################################
 # libogg-1.3.6
@@ -176,7 +184,8 @@ if [ ! -f "$FOLDER/__package_installed" ]; then
     ./configure \
         --enable-static \
         --disable-shared \
-        --prefix="$TOMATOWARE_SYSROOT"
+        --prefix="$TOMATOWARE_SYSROOT" \
+    || handle_configure_error $?
 
     $MAKE
     make install
@@ -213,7 +222,8 @@ if [ ! -f "$FOLDER/__package_installed" ]; then
         --enable-static \
         --disable-shared \
         --disable-oggtest \
-        --prefix="$TOMATOWARE_SYSROOT"
+        --prefix="$TOMATOWARE_SYSROOT" \
+    || handle_configure_error $?
 
     $MAKE
     make install
@@ -257,7 +267,8 @@ if [ ! -f "$FOLDER/__package_installed" ]; then
         --disable-oggtest \
         --disable-examples \
         --without-libiconv-prefix \
-        --prefix="$TOMATOWARE_SYSROOT"
+        --prefix="$TOMATOWARE_SYSROOT" \
+    || handle_configure_error $?
 
     $MAKE
     make install
@@ -297,7 +308,8 @@ if [ ! -f "$FOLDER/__package_installed" ]; then
         --disable-debugging \
         --disable-profiling \
         --disable-dependency-tracking \
-        --prefix="$TOMATOWARE_SYSROOT"
+        --prefix="$TOMATOWARE_SYSROOT" \
+    || handle_configure_error $?
 
     $MAKE
     make install
@@ -338,7 +350,8 @@ if [ ! -f "$FOLDER/__package_installed" ]; then
         --disable-rpath \
         --without-libiconv-prefix \
         --without-libintl-prefix \
-        --prefix="$TOMATOWARE_SYSROOT"
+        --prefix="$TOMATOWARE_SYSROOT" \
+    || handle_configure_error $?
 
     $MAKE
     make install
@@ -375,7 +388,8 @@ if [ ! -f "$FOLDER/__package_installed" ]; then
         --enable-static \
         --disable-shared \
         --enable-maxmem=1 \
-        --prefix="$TOMATOWARE_SYSROOT"
+        --prefix="$TOMATOWARE_SYSROOT" \
+    || handle_configure_error $?
 
     $MAKE
     make install
@@ -437,7 +451,8 @@ if [ ! -f "$FOLDER/__package_installed" ]; then
         --disable-avfilter \
         --enable-zlib --disable-debug \
         --disable-rpath \
-        --prefix="$TOMATOWARE_SYSROOT"
+        --prefix="$TOMATOWARE_SYSROOT" \
+    || handle_configure_error $?
 
     $MAKE
     make install
@@ -476,13 +491,13 @@ if [ ! -f "$FOLDER/__package_installed" ]; then
         --disable-rpath \
         --disable-nls \
         --disable-silent-rules \
-        --prefix="$TOMATOWARE_SYSROOT"
+        --prefix="$TOMATOWARE_SYSROOT" \
+    || handle_configure_error $?
 
     $MAKE
     make install
 
-    # Stripping removes debug symbols and other metadata, shrinking the size by roughly 80%.
-    # The executable programs will still be quite large because of static linking.
+    # Strip removes debug symbols and other metadata
     [ -f "$TOMATOWARE_SYSROOT/sbin/minidlnad" ] && strip "$TOMATOWARE_SYSROOT/sbin/minidlnad"
 
     touch __package_installed

@@ -40,8 +40,9 @@ set -e
 set -x
 
 ################################################################################
-# Checksum verification for downloaded file
+# Helpers
 
+# Checksum verification for downloaded file
 check_sha256() {
     file="$1"
     expected="$2"
@@ -64,8 +65,17 @@ check_sha256() {
     return 0
 }
 
+# If autoconf/configure fails due to missing libraries or undefined symbols, you
+# immediately see all undefined references without having to manually search config.log
+handle_configure_error() {
+    local rc=$1
+    #grep -R --include="config.log" --color=always "undefined reference" .
+    find . -name "config.log" -exec grep -H "undefined reference" {} \;
+    return $rc
+}
+
 ################################################################################
-# Install the build environment, if it is not already installed
+# Install the build environment
 
 TOMATOWARE_URL="https://github.com/lancethepants/tomatoware/releases/download/v5.0/arm-soft-mmc.tgz"
 TOMATOWARE_SHA256="ff490819a16f5ddb80ec095342ac005a444b6ebcd3ed982b8879134b2b036fcc"
@@ -138,42 +148,18 @@ echo "Now running under: $(readlink /proc/$$/exe)"
 # General
 
 PKG_ROOT=minidlna
-#REBUILD_ALL=1
+REBUILD_ALL=false
+ENABLE_MINIDLNA_THUMBNAILS=false
 SRC="$TOMATOWARE_SYSROOT/src/$PKG_ROOT"
 mkdir -p "$SRC"
 MAKE="make -j$(grep -c ^processor /proc/cpuinfo)" # parallelism
 #MAKE="make -j1"                                  # one job at a time
 export PATH="$TOMATOWARE_SYSROOT/usr/bin:$TOMATOWARE_SYSROOT/usr/local/sbin:$TOMATOWARE_SYSROOT/usr/local/bin:$TOMATOWARE_SYSROOT/usr/sbin:$TOMATOWARE_SYSROOT/sbin:$TOMATOWARE_SYSROOT/bin"
-#export PKG_CONFIG_PATH="$TOMATOWARE_SYSROOT/lib/pkgconfig"
+export PKG_CONFIG_PATH="$TOMATOWARE_SYSROOT/lib/pkgconfig"
 #export PKG_CONFIG="pkg-config --static"
-
-# If autoconf/configure fails due to missing libraries or undefined symbols, you
-# immediately see all undefined references without having to manually search config.log
-handle_configure_error() {
-    local rc=$1
-    #grep -R --include="config.log" --color=always "undefined reference" .
-    find . -name "config.log" -exec grep -H "undefined reference" {} \;
-    return $rc
-}
 
 ################################################################################
 # Package management
-
-update_patch_library() {
-    cd $PARENT_DIR
-    ENTWARE_PACKAGES_DIR="$PARENT_DIR/entware-packages"
-
-    if [ ! -d "$ENTWARE_PACKAGES_DIR" ]; then
-        git clone https://github.com/Entware/entware-packages
-    else
-        cd entware-packages
-        git pull
-        cd ..
-    fi
-
-    return 0
-}
-update_patch_library
 
 apply_patch() {
     local patch_path="$1"
@@ -275,6 +261,21 @@ unpack_archive_and_patch() {
     return 0
 }
 
+update_patch_library() {
+    ENTWARE_PACKAGES_DIR="$PARENT_DIR/entware-packages"
+    cd $PARENT_DIR
+
+    if [ ! -d "$ENTWARE_PACKAGES_DIR" ]; then
+        git clone https://github.com/Entware/entware-packages
+    else
+        cd entware-packages
+        git pull
+        cd ..
+    fi
+
+    return 0
+}
+#update_patch_library
 
 ################################################################################
 # libogg-1.3.6
@@ -286,7 +287,7 @@ DL_HASH="83e6704730683d004d20e21b8f7f55dcb3383cdf84c0daedf30bde175f774638"
 URL="https://ftp.osuosl.org/pub/xiph/releases/ogg/$DL"
 FOLDER="${DL%.tar.gz*}"
 
-if [ "$REBUILD_ALL" == "1" ]; then
+if $REBUILD_ALL; then
     if [ -f "$FOLDER/Makefile" ]; then
         cd "$FOLDER" && make uninstall && cd ..
     fi || true
@@ -322,7 +323,7 @@ DL_HASH="0e982409a9c3fc82ee06e08205b1355e5c6aa4c36bca58146ef399621b0ce5ab"
 URL="https://ftp.osuosl.org/pub/xiph/releases/vorbis/libvorbis-1.3.7.tar.gz"
 FOLDER="${DL%.tar.gz*}"
 
-if [ "$REBUILD_ALL" == "1" ]; then
+if $REBUILD_ALL; then
     if [ -f "$FOLDER/Makefile" ]; then
         cd "$FOLDER" && make uninstall && cd ..
     fi || true
@@ -359,7 +360,7 @@ DL_HASH="f2c1c76592a82ffff8413ba3c4a1299b6c7ab06c734dee03fd88630485c2b920"
 URL="https://ftp.osuosl.org/pub/xiph/releases/flac/$DL"
 FOLDER="${DL%.tar.xz*}"
 
-if [ "$REBUILD_ALL" == "1" ]; then
+if $REBUILD_ALL; then
     if [ -f "$FOLDER/Makefile" ]; then
         cd "$FOLDER" && make uninstall && cd ..
     fi || true
@@ -403,7 +404,7 @@ DL_HASH="63da4f6e7997278f8a3fef4c6a372d342f705051d1eeb6a46a86b03610e26151"
 URL="https://downloads.sourceforge.net/project/mad/libid3tag/0.15.1b/$DL"
 FOLDER="libid3tag-0.15.1b"
 
-if [ "$REBUILD_ALL" == "1" ]; then
+if [ $REBUILD_ALL; then
     if [ -f "$FOLDER/Makefile" ]; then
         cd "$FOLDER" && make uninstall && cd ..
     fi || true
@@ -443,7 +444,7 @@ DL_HASH="16fdfa59cf9d301a9ccd5c1bc2fe05c78ee0ee2bf96e39640039e3dc0fd593cb"
 URL="https://github.com/libexif/libexif/releases/download/v0.6.25/$DL"
 FOLDER="${DL%.tar.gz*}"
 
-if [ "$REBUILD_ALL" == "1" ]; then
+if $REBUILD_ALL; then
     if [ -f "$FOLDER/Makefile" ]; then
         cd "$FOLDER" && make uninstall && cd ..
     fi || true
@@ -484,7 +485,7 @@ DL_HASH="04705c110cb2469caa79fb71fba3d7bf834914706e9641a4589485c1f832565b"
 URL="https://www.ijg.org/files/$DL"
 FOLDER="jpeg-9f"
 
-if [ "$REBUILD_ALL" == "1" ]; then
+if $REBUILD_ALL; then
     if [ -f "$FOLDER/Makefile" ]; then
         cd "$FOLDER" && make uninstall && cd ..
     fi || true
@@ -521,7 +522,7 @@ DL_HASH="1d3fb8ccc2932d04aa3663e22ef5ef490244370f4e568d7850165068778d98d4"
 URL="https://downloads.sourceforge.net/project/libpng/libpng16/1.6.53/$DL"
 FOLDER="${DL%.tar.xz*}"
 
-if [ "$REBUILD_ALL" == "1" ]; then
+if $REBUILD_ALL; then
     if [ -f "$FOLDER/Makefile" ]; then
         cd "$FOLDER" && make uninstall && cd ..
     fi || true
@@ -569,7 +570,7 @@ ffmpeg_options() {
     #printf "\n"
 }
 
-if [ "$REBUILD_ALL" == "1" ]; then
+if $REBUILD_ALL; then
     if [ -f "$FOLDER/Makefile" ]; then
         cd "$FOLDER" && make uninstall && cd ..
     fi || true
@@ -580,7 +581,7 @@ if [ ! -f "$FOLDER/__package_installed" ]; then
     [ ! -f "$DL" ] && wget "$URL"
 
     check_sha256 "$DL" "$DL_HASH"
-    unpack_archive_and_patch "./$DL" "./$FOLDER" "$ENTWARE_PACKAGES_DIR/multimedia/ffmpeg/patches"
+    unpack_archive_and_patch "./$DL" "./$FOLDER" "$SCRIPT_DIR/patches/ffmpeg/ffmpeg-6.1.2"
     cd "$FOLDER"
 
     FFMPEG_DECODERS="aac ac3 atrac3 h264 jpegls mp3 mpeg1video mpeg2video mpeg4 mpegvideo png wmav1 wmav2 svq3"
@@ -593,8 +594,8 @@ if [ ! -f "$FOLDER/__package_installed" ]; then
         --enable-static --disable-shared --disable-doc \
         --enable-gpl --enable-version3 --enable-nonfree \
         --enable-pthreads --enable-small --disable-encoders --disable-filters \
-        --disable-muxers --disable-devices --disable-ffmpeg --disable-ffplay \
-        --disable-ffprobe --disable-avdevice --disable-swscale \
+        --disable-devices --disable-ffmpeg --disable-ffplay \
+        --disable-ffprobe --disable-avdevice \
         --disable-hwaccels --disable-network --disable-bsfs \
         --enable-demuxers $(ffmpeg_options "--disable-demuxer" "$FFMPEG_DISABLED_DEMUXERS") \
         --disable-decoders $(ffmpeg_options "--enable-decoder" "$FFMPEG_DECODERS") \
@@ -614,6 +615,7 @@ fi
 ################################################################################
 # ffmpegthumbnailer-2.2.3
 
+if $ENABLE_MINIDLNA_THUMBNAILS; then
 PKG_MAIN=ffmpegthumbnailer
 mkdir -p "$SRC/$PKG_MAIN" && cd "$SRC/$PKG_MAIN"
 DL="2.2.3.tar.gz"
@@ -624,7 +626,7 @@ URL="https://github.com/dirkvdb/ffmpegthumbnailer/archive/refs/tags/$DL"
 #URL="https://github.com/dirkvdb/ffmpegthumbnailer/releases/download/2.2.2/$DL"
 FOLDER="ffmpegthumbnailer-2.2.3"
 
-if [ "$REBUILD_ALL" == "1" ]; then
+if $REBUILD_ALL; then
     if [ -f "$FOLDER/Makefile" ]; then
         cd "$FOLDER" && make uninstall && cd ..
     fi || true
@@ -660,7 +662,13 @@ if [ ! -f "$FOLDER/__package_installed" ]; then
 
     cd ..
 
+    if [ ! -f "$TOMATOWARE_SYSROOT/include/libffmpegthumbnailer/videothumbnailerc.h" ]; then
+        mkdir -p "$TOMATOWARE_SYSROOT/include/libffmpegthumbnailer"
+        cp -p libffmpegthumbnailer/*.h "$TOMATOWARE_SYSROOT/include/libffmpegthumbnailer/."
+    fi
+
     touch __package_installed
+fi
 fi
 
 ################################################################################
@@ -673,7 +681,7 @@ DL_HASH="39026c6d4a139b9180192d1c37225aa3376fdf4f1a74d7debbdbb693d996afa4"
 URL="https://downloads.sourceforge.net/project/minidlna/minidlna/1.3.3/$DL"
 FOLDER="${DL%.tar.gz*}"
 
-if [ "$REBUILD_ALL" == "1" ]; then
+if $REBUILD_ALL; then
     if [ -f "$FOLDER/Makefile" ]; then
         cd "$FOLDER" && make uninstall && cd ..
     fi || true
@@ -684,18 +692,27 @@ if [ ! -f "$FOLDER/__package_installed" ]; then
     [ ! -f "$DL" ] && wget "$URL"
 
     check_sha256 "$DL" "$DL_HASH"
-    unpack_archive_and_patch "./$DL" "./$FOLDER" "$ENTWARE_PACKAGES_DIR/multimedia/minidlna/patches"
+    unpack_archive_and_patch "./$DL" "./$FOLDER" "$SCRIPT_DIR/patches/minidlna/minidlna-1.3.3"
     cd "$FOLDER"
 
-    LIBS="-lbz2" \
-    ./configure \
-        --enable-static \
-        --disable-rpath \
-        --disable-nls \
-        --disable-silent-rules \
-        --enable-thumbnail \
-        --prefix="$TOMATOWARE_SYSROOT" \
-    || handle_configure_error $?
+    if $ENABLE_MINIDLNA_THUMBNAILS; then
+        LIBS="-lbz2 -lavfilter -ljpeg -lstdc++" \
+        ./configure \
+            --enable-static \
+            --disable-rpath \
+            --disable-nls \
+            --enable-thumbnail \
+            --prefix="$TOMATOWARE_SYSROOT" \
+        || handle_configure_error $?
+    else
+        LIBS="-lbz2" \
+        ./configure \
+            --enable-static \
+            --disable-rpath \
+            --disable-nls \
+            --prefix="$TOMATOWARE_SYSROOT" \
+        || handle_configure_error $?
+    fi
 
     $MAKE
     make install

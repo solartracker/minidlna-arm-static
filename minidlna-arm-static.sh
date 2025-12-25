@@ -149,7 +149,7 @@ echo "Now running under: $(readlink /proc/$$/exe)"
 
 PKG_ROOT=minidlna
 REBUILD_ALL=false
-ENABLE_MINIDLNA_THUMBNAILS=false
+MINIDLNA_THUMBNAILS_ENABLED=false
 SRC="$TOMATOWARE_SYSROOT/src/$PKG_ROOT"
 mkdir -p "$SRC"
 MAKE="make -j$(grep -c ^processor /proc/cpuinfo)" # parallelism
@@ -562,12 +562,16 @@ URL="https://ffmpeg.org/releases/$DL"
 FOLDER="${DL%.tar.gz*}"
 
 ffmpeg_options() {
-    local name="$1"
-    local values="$2"
-    for value in $values; do
-        printf "%s=%s " $name $value
-    done
-    #printf "\n"
+    local v
+    for v in $2; do printf -- "%s=%s " $1 $v; done
+    return 0
+}
+
+ffmpeg_enable() {
+    local p n
+    $2 && p=enable || p=disable
+    for n in $1; do printf -- "--%s-%s " "$p" "$n"; done
+    return 0
 }
 
 if $REBUILD_ALL; then
@@ -601,6 +605,7 @@ if [ ! -f "$FOLDER/__package_installed" ]; then
         --disable-decoders $(ffmpeg_options "--enable-decoder" "$FFMPEG_DECODERS") \
         --disable-parsers $(ffmpeg_options "--enable-parser" "$FFMPEG_PARSERS") \
         --disable-protocols $(ffmpeg_options "--enable-protocol" "$FFMPEG_PROTOCOLS") \
+        $(ffmpeg_enable "avfilter swcale" $MINIDLNA_THUMBNAILS_ENABLED) \
         --enable-zlib --disable-debug \
         --disable-rpath \
         --prefix="$TOMATOWARE_SYSROOT" \
@@ -615,7 +620,7 @@ fi
 ################################################################################
 # ffmpegthumbnailer-2.2.3
 
-if $ENABLE_MINIDLNA_THUMBNAILS; then
+if $MINIDLNA_THUMBNAILS_ENABLED; then
 PKG_MAIN=ffmpegthumbnailer
 mkdir -p "$SRC/$PKG_MAIN" && cd "$SRC/$PKG_MAIN"
 DL="2.2.3.tar.gz"
@@ -695,7 +700,7 @@ if [ ! -f "$FOLDER/__package_installed" ]; then
     unpack_archive_and_patch "./$DL" "./$FOLDER" "$SCRIPT_DIR/patches/minidlna/minidlna-1.3.3"
     cd "$FOLDER"
 
-    if $ENABLE_MINIDLNA_THUMBNAILS; then
+    if $MINIDLNA_THUMBNAILS_ENABLED; then
         LIBS="-lbz2 -lavfilter -ljpeg -lstdc++" \
         ./configure \
             --enable-static \

@@ -147,7 +147,7 @@ export PATH="$TOMATOWARE_SYSROOT/usr/bin:$TOMATOWARE_SYSROOT/usr/local/sbin:$TOM
 #export PKG_CONFIG_PATH="$TOMATOWARE_SYSROOT/lib/pkgconfig"
 #export PKG_CONFIG="pkg-config --static"
 
-# If Autoconf/configure fails due to missing libraries or undefined symbols, you
+# If autoconf/configure fails due to missing libraries or undefined symbols, you
 # immediately see all undefined references without having to manually search config.log
 handle_configure_error() {
     local rc=$1

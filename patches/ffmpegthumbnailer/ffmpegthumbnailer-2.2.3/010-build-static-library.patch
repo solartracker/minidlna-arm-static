@@ -1,0 +1,31 @@
+--- a/CMakeLists.txt      2024-09-13 16:22:46.000000000 -0400
++++ b/CMakeLists.txt      2025-12-25 13:29:00.402556840 -0500
+@@ -44,6 +44,8 @@
+     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=address")
+ endif ()
+
++set(CMAKE_FIND_LIBRARY_SUFFIXES ".a" ".so")
++
+ find_package(FFmpeg REQUIRED)
+ if (NOT FFmpeg_FOUND)
+     message(FATAL_ERROR "BAAM")
+@@ -62,6 +64,11 @@
+     set(HAVE_PNG ON)
+ endif ()
+
++find_package(BZip2 REQUIRED)
++if (TARGET BZip2::BZip2)
++    set(HAVE_BZIP2 ON)
++endif ()
++
+ set(LIB_HDRS
+     libffmpegthumbnailer/videothumbnailer.h
+     libffmpegthumbnailer/videothumbnailerc.h
+@@ -99,6 +106,7 @@
+     FFmpeg::avfilter
+     $<TARGET_NAME_IF_EXISTS:JPEG::JPEG>
+     $<TARGET_NAME_IF_EXISTS:PNG::PNG>
++    BZip2::BZip2
+ )
+
+ # we use our own deprecated struct menbers, so disable the warning about it

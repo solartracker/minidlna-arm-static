@@ -157,14 +157,134 @@ handle_configure_error() {
 }
 
 ################################################################################
+# Package management
+
+update_patch_library() {
+    cd $PARENT_DIR
+    ENTWARE_PACKAGES_DIR="$PARENT_DIR/entware-packages"
+
+    if [ ! -d "$ENTWARE_PACKAGES_DIR" ]; then
+        git clone https://github.com/Entware/entware-packages
+    else
+        cd entware-packages
+        git pull
+        cd ..
+    fi
+
+    return 0
+}
+update_patch_library
+
+apply_patch() {
+    local patch_path="$1"
+    local source_dir="$2"
+
+    if [ -f "$patch_path" ]; then
+        echo "Applying patch: $patch_path"
+        if patch --dry-run --silent -p1 -d "$source_dir/" -i "$patch_path"; then
+            if ! patch -p1 -d "$source_dir/" -i "$patch_path"; then
+                echo "The patch failed."
+                return 1
+            fi
+        else
+            echo "The patch was not applied. Failed dry run."
+            return 1
+        fi
+    else
+        echo "Patch not found: $patch_path"
+        return 1
+    fi
+
+    return 0
+}
+
+apply_patches_all() {
+    local patch_dir="$1"
+    local source_dir="$2"
+    local patch_file=""
+    local rc=0
+    local rc_error=0
+
+    if [ -d "$patch_dir" ]; then
+        for patch_file in $patch_dir/*.patch; do
+            if [ -f "$patch_file" ]; then
+                apply_patch "$patch_file" "$source_dir"
+                rc=$?
+                if [ $rc != 0 ]; then
+                    rc_error=$rc
+                fi
+            fi
+        done
+    fi
+
+    return $rc_error
+}
+
+unpack_archive() {
+    local source_path="$1"
+    local target_dir="$2"
+
+    case "$source_path" in
+        *.tar.gz|*.tgz)
+            tar xzvf "$source_path" -C "$target_dir"
+            ;;
+        *.tar.bz2|*.tbz)
+            tar xjvf "$source_path" -C "$target_dir"
+            ;;
+        *.tar.xz|*.txz)
+            tar xJvf "$source_path" -C "$target_dir"
+            ;;
+        *.tar.lz|*.tlz)
+            tar xlvf "$source_path" -C "$target_dir"
+            ;;
+        *.tar)
+            tar xvf "$source_path" -C "$target_dir"
+            ;;
+        *)
+            echo "Unsupported archive type: $source_path" >&2
+            return 1
+            ;;
+    esac
+
+    return 0
+}
+
+unpack_archive_and_patch() {
+    local source_path="$1"
+    local target_dir="$2"
+    local patch_dir="$3"
+
+    if [ ! -d "$target_dir" ]; then
+        rm -rf temp
+        mkdir -p temp
+        if unpack_archive "$source_path" temp; then
+            if ! mv -f temp/* "$target_dir"; then
+                mkdir -p "$target_dir"
+                mv -f temp/* "$target_dir"
+            fi
+            rm -rf temp
+            if [ -n "$patch_dir" ]; then
+                if ! apply_patches_all "$patch_dir" "$target_dir"; then
+                    rm -rf "$target_dir"
+                    return 1
+                fi
+            fi
+        fi
+    fi
+
+    return 0
+}
+
+
+################################################################################
 # libogg-1.3.6
 
 PKG_MAIN=libogg
 mkdir -p "$SRC/$PKG_MAIN" && cd "$SRC/$PKG_MAIN"
 DL="libogg-1.3.6.tar.gz"
-DL_SHA256="83e6704730683d004d20e21b8f7f55dcb3383cdf84c0daedf30bde175f774638"
-FOLDER="${DL%.tar.gz*}"
+DL_HASH="83e6704730683d004d20e21b8f7f55dcb3383cdf84c0daedf30bde175f774638"
 URL="https://ftp.osuosl.org/pub/xiph/releases/ogg/$DL"
+FOLDER="${DL%.tar.gz*}"
 
 if [ "$REBUILD_ALL" == "1" ]; then
     if [ -f "$FOLDER/Makefile" ]; then
@@ -176,9 +296,8 @@ fi || true
 if [ ! -f "$FOLDER/__package_installed" ]; then
     [ ! -f "$DL" ] && wget "$URL"
 
-    check_sha256 "$DL" "$DL_SHA256"
-
-    [ ! -d "$FOLDER" ] && tar xzvf "$DL"
+    check_sha256 "$DL" "$DL_HASH"
+    unpack_archive_and_patch "./$DL" "./$FOLDER"
     cd "$FOLDER"
 
     ./configure \
@@ -199,9 +318,9 @@ fi
 PKG_MAIN=libvorbis
 mkdir -p "$SRC/$PKG_MAIN" && cd "$SRC/$PKG_MAIN"
 DL="libvorbis-1.3.7.tar.gz"
-DL_SHA256="0e982409a9c3fc82ee06e08205b1355e5c6aa4c36bca58146ef399621b0ce5ab"
-FOLDER="${DL%.tar.gz*}"
+DL_HASH="0e982409a9c3fc82ee06e08205b1355e5c6aa4c36bca58146ef399621b0ce5ab"
 URL="https://ftp.osuosl.org/pub/xiph/releases/vorbis/libvorbis-1.3.7.tar.gz"
+FOLDER="${DL%.tar.gz*}"
 
 if [ "$REBUILD_ALL" == "1" ]; then
     if [ -f "$FOLDER/Makefile" ]; then
@@ -213,9 +332,8 @@ fi || true
 if [ ! -f "$FOLDER/__package_installed" ]; then
     [ ! -f "$DL" ] && wget "$URL"
 
-    check_sha256 "$DL" "$DL_SHA256"
-
-    [ ! -d "$FOLDER" ] && tar xzvf "$DL"
+    check_sha256 "$DL" "$DL_HASH"
+    unpack_archive_and_patch "./$DL" "./$FOLDER"
     cd "$FOLDER"
 
     ./configure \
@@ -237,9 +355,9 @@ fi
 PKG_MAIN=flac
 mkdir -p "$SRC/$PKG_MAIN" && cd "$SRC/$PKG_MAIN"
 DL="flac-1.5.0.tar.xz"
-DL_SHA256="f2c1c76592a82ffff8413ba3c4a1299b6c7ab06c734dee03fd88630485c2b920"
-FOLDER="${DL%.tar.xz*}"
+DL_HASH="f2c1c76592a82ffff8413ba3c4a1299b6c7ab06c734dee03fd88630485c2b920"
 URL="https://ftp.osuosl.org/pub/xiph/releases/flac/$DL"
+FOLDER="${DL%.tar.xz*}"
 
 if [ "$REBUILD_ALL" == "1" ]; then
     if [ -f "$FOLDER/Makefile" ]; then
@@ -251,9 +369,8 @@ fi || true
 if [ ! -f "$FOLDER/__package_installed" ]; then
     [ ! -f "$DL" ] && wget "$URL"
 
-    check_sha256 "$DL" "$DL_SHA256"
-
-    [ ! -d "$FOLDER" ] && tar xJvf "$DL"
+    check_sha256 "$DL" "$DL_HASH"
+    unpack_archive_and_patch "./$DL" "./$FOLDER"
     cd "$FOLDER"
 
     ./configure \
@@ -282,9 +399,9 @@ fi
 PKG_MAIN=libid3tag
 mkdir -p "$SRC/$PKG_MAIN" && cd "$SRC/$PKG_MAIN"
 DL="libid3tag-0.15.1b.tar.gz"
-DL_SHA256="63da4f6e7997278f8a3fef4c6a372d342f705051d1eeb6a46a86b03610e26151"
-FOLDER="libid3tag-0.15.1b"
+DL_HASH="63da4f6e7997278f8a3fef4c6a372d342f705051d1eeb6a46a86b03610e26151"
 URL="https://downloads.sourceforge.net/project/mad/libid3tag/0.15.1b/$DL"
+FOLDER="libid3tag-0.15.1b"
 
 if [ "$REBUILD_ALL" == "1" ]; then
     if [ -f "$FOLDER/Makefile" ]; then
@@ -296,9 +413,8 @@ fi || true
 if [ ! -f "$FOLDER/__package_installed" ]; then
     [ ! -f "$DL" ] && wget "$URL"
 
-    check_sha256 "$DL" "$DL_SHA256"
-
-    [ ! -d "$FOLDER" ] && tar xzvf "$DL"
+    check_sha256 "$DL" "$DL_HASH"
+    unpack_archive_and_patch "./$DL" "./$FOLDER"
     cd "$FOLDER"
 
     ./configure \
@@ -323,9 +439,9 @@ fi
 PKG_MAIN=libexif
 mkdir -p "$SRC/$PKG_MAIN" && cd "$SRC/$PKG_MAIN"
 DL="libexif-0.6.25.tar.gz"
-DL_SHA256="16fdfa59cf9d301a9ccd5c1bc2fe05c78ee0ee2bf96e39640039e3dc0fd593cb"
-FOLDER="${DL%.tar.gz*}"
+DL_HASH="16fdfa59cf9d301a9ccd5c1bc2fe05c78ee0ee2bf96e39640039e3dc0fd593cb"
 URL="https://github.com/libexif/libexif/releases/download/v0.6.25/$DL"
+FOLDER="${DL%.tar.gz*}"
 
 if [ "$REBUILD_ALL" == "1" ]; then
     if [ -f "$FOLDER/Makefile" ]; then
@@ -337,9 +453,8 @@ fi || true
 if [ ! -f "$FOLDER/__package_installed" ]; then
     [ ! -f "$DL" ] && wget "$URL"
 
-    check_sha256 "$DL" "$DL_SHA256"
-
-    [ ! -d "$FOLDER" ] && tar xzvf "$DL"
+    check_sha256 "$DL" "$DL_HASH"
+    unpack_archive_and_patch "./$DL" "./$FOLDER"
     cd "$FOLDER"
 
     ./configure \
@@ -365,9 +480,9 @@ fi
 PKG_MAIN=jpeg
 mkdir -p "$SRC/$PKG_MAIN" && cd "$SRC/$PKG_MAIN"
 DL="jpegsrc.v9f.tar.gz"
-DL_SHA256="04705c110cb2469caa79fb71fba3d7bf834914706e9641a4589485c1f832565b"
-FOLDER="jpeg-9f"
+DL_HASH="04705c110cb2469caa79fb71fba3d7bf834914706e9641a4589485c1f832565b"
 URL="https://www.ijg.org/files/$DL"
+FOLDER="jpeg-9f"
 
 if [ "$REBUILD_ALL" == "1" ]; then
     if [ -f "$FOLDER/Makefile" ]; then
@@ -379,9 +494,8 @@ fi || true
 if [ ! -f "$FOLDER/__package_installed" ]; then
     [ ! -f "$DL" ] && wget "$URL"
 
-    check_sha256 "$DL" "$DL_SHA256"
-
-    [ ! -d "$FOLDER" ] && tar xzvf "$DL"
+    check_sha256 "$DL" "$DL_HASH"
+    unpack_archive_and_patch "./$DL" "./$FOLDER"
     cd "$FOLDER"
 
     ./configure \
@@ -398,14 +512,53 @@ if [ ! -f "$FOLDER/__package_installed" ]; then
 fi
 
 ################################################################################
+# libpng-1.6.53
+
+PKG_MAIN=libpng
+mkdir -p "$SRC/$PKG_MAIN" && cd "$SRC/$PKG_MAIN"
+DL="libpng-1.6.53.tar.xz"
+DL_HASH="1d3fb8ccc2932d04aa3663e22ef5ef490244370f4e568d7850165068778d98d4"
+URL="https://downloads.sourceforge.net/project/libpng/libpng16/1.6.53/$DL"
+FOLDER="${DL%.tar.xz*}"
+
+if [ "$REBUILD_ALL" == "1" ]; then
+    if [ -f "$FOLDER/Makefile" ]; then
+        cd "$FOLDER" && make uninstall && cd ..
+    fi || true
+    rm -rf "$FOLDER"
+fi || true
+
+if [ ! -f "$FOLDER/__package_installed" ]; then
+    [ ! -f "$DL" ] && wget "$URL"
+
+    check_sha256 "$DL" "$DL_HASH"
+    unpack_archive_and_patch "./$DL" "./$FOLDER"
+    cd "$FOLDER"
+
+    ./configure \
+        --enable-static \
+        --disable-shared \
+        --disable-tests \
+        --disable-tools \
+        --disable-hardware-optimizations \
+        --prefix="$TOMATOWARE_SYSROOT" \
+    || handle_configure_error $?
+
+    $MAKE
+    make install
+
+    touch __package_installed
+fi
+
+################################################################################
 # ffmpeg-6.1.2
 
 PKG_MAIN=ffmpeg
 mkdir -p "$SRC/$PKG_MAIN" && cd "$SRC/$PKG_MAIN"
 DL="ffmpeg-6.1.2.tar.gz"
-DL_SHA256="def310d21e40c39e6971a6bcd07fba78ca3ce39cc01ffda4dca382599dc06312"
-FOLDER="${DL%.tar.gz*}"
+DL_HASH="def310d21e40c39e6971a6bcd07fba78ca3ce39cc01ffda4dca382599dc06312"
 URL="https://ffmpeg.org/releases/$DL"
+FOLDER="${DL%.tar.gz*}"
 
 ffmpeg_options() {
     local name="$1"
@@ -426,9 +579,8 @@ fi || true
 if [ ! -f "$FOLDER/__package_installed" ]; then
     [ ! -f "$DL" ] && wget "$URL"
 
-    check_sha256 "$DL" "$DL_SHA256"
-
-    [ ! -d "$FOLDER" ] && tar xzvf "$DL"
+    check_sha256 "$DL" "$DL_HASH"
+    unpack_archive_and_patch "./$DL" "./$FOLDER" "$ENTWARE_PACKAGES_DIR/multimedia/ffmpeg/patches"
     cd "$FOLDER"
 
     FFMPEG_DECODERS="aac ac3 atrac3 h264 jpegls mp3 mpeg1video mpeg2video mpeg4 mpegvideo png wmav1 wmav2 svq3"
@@ -448,7 +600,6 @@ if [ ! -f "$FOLDER/__package_installed" ]; then
         --disable-decoders $(ffmpeg_options "--enable-decoder" "$FFMPEG_DECODERS") \
         --disable-parsers $(ffmpeg_options "--enable-parser" "$FFMPEG_PARSERS") \
         --disable-protocols $(ffmpeg_options "--enable-protocol" "$FFMPEG_PROTOCOLS") \
-        --disable-avfilter \
         --enable-zlib --disable-debug \
         --disable-rpath \
         --prefix="$TOMATOWARE_SYSROOT" \
@@ -461,14 +612,17 @@ if [ ! -f "$FOLDER/__package_installed" ]; then
 fi
 
 ################################################################################
-# minidlna-1.3.3
+# ffmpegthumbnailer-2.2.3
 
-PKG_MAIN=minidlna
+PKG_MAIN=ffmpegthumbnailer
 mkdir -p "$SRC/$PKG_MAIN" && cd "$SRC/$PKG_MAIN"
-DL="minidlna-1.3.3.tar.gz"
-DL_SHA256="39026c6d4a139b9180192d1c37225aa3376fdf4f1a74d7debbdbb693d996afa4"
-FOLDER="${DL%.tar.gz*}"
-URL="https://downloads.sourceforge.net/project/minidlna/minidlna/1.3.3/$DL"
+DL="2.2.3.tar.gz"
+DL_HASH="8c9b9057c6cc8bce9d11701af224c8139c940f734c439a595525e073b09d19b8"
+URL="https://github.com/dirkvdb/ffmpegthumbnailer/archive/refs/tags/$DL"
+#DL="ffmpegthumbnailer-2.2.2.tar.bz2"
+#DL_HASH="1cb24059c38223f657b300c84dd80491b7040d4b69471c4fea69be862bc99b5b"
+#URL="https://github.com/dirkvdb/ffmpegthumbnailer/releases/download/2.2.2/$DL"
+FOLDER="ffmpegthumbnailer-2.2.3"
 
 if [ "$REBUILD_ALL" == "1" ]; then
     if [ -f "$FOLDER/Makefile" ]; then
@@ -480,9 +634,57 @@ fi || true
 if [ ! -f "$FOLDER/__package_installed" ]; then
     [ ! -f "$DL" ] && wget "$URL"
 
-    check_sha256 "$DL" "$DL_SHA256"
+    check_sha256 "$DL" "$DL_HASH"
+    unpack_archive_and_patch "./$DL" "./$FOLDER" "$SCRIPT_DIR/patches/ffmpegthumbnailer/ffmpegthumbnailer-2.2.3"
+    cd "$FOLDER"
 
-    [ ! -d "$FOLDER" ] && tar xzvf "$DL"
+    rm -rf build
+    mkdir -p build
+    cd build
+
+    cmake \
+      -DCMAKE_INSTALL_PREFIX="$TOMATOWARE_SYSROOT" \
+      -DCMAKE_PREFIX_PATH="$TOMATOWARE_SYSROOT" \
+      -DENABLE_STATIC=ON \
+      -DENABLE_SHARED=OFF \
+      -DJPEG_LIBRARY="$TOMATOWARE_SYSROOT/lib/libjpeg.a" \
+      -DPNG_LIBRARY="$TOMATOWARE_SYSROOT/lib/libpng.a" \
+      -DZLIB_LIBRARY="$TOMATOWARE_SYSROOT/lib/libz.a" \
+      -DBZIP2_LIBRARY="$TOMATOWARE_SYSROOT/lib/libbz2.a" \
+      -DCMAKE_VERBOSE_MAKEFILE=ON \
+      -DCMAKE_EXE_LINKER_FLAGS="-static -static-libgcc -static-libstdc++" \
+      ../
+
+    $MAKE
+    make install
+
+    cd ..
+
+    touch __package_installed
+fi
+
+################################################################################
+# minidlna-1.3.3
+
+PKG_MAIN=minidlna
+mkdir -p "$SRC/$PKG_MAIN" && cd "$SRC/$PKG_MAIN"
+DL="minidlna-1.3.3.tar.gz"
+DL_HASH="39026c6d4a139b9180192d1c37225aa3376fdf4f1a74d7debbdbb693d996afa4"
+URL="https://downloads.sourceforge.net/project/minidlna/minidlna/1.3.3/$DL"
+FOLDER="${DL%.tar.gz*}"
+
+if [ "$REBUILD_ALL" == "1" ]; then
+    if [ -f "$FOLDER/Makefile" ]; then
+        cd "$FOLDER" && make uninstall && cd ..
+    fi || true
+    rm -rf "$FOLDER"
+fi || true
+
+if [ ! -f "$FOLDER/__package_installed" ]; then
+    [ ! -f "$DL" ] && wget "$URL"
+
+    check_sha256 "$DL" "$DL_HASH"
+    unpack_archive_and_patch "./$DL" "./$FOLDER" "$ENTWARE_PACKAGES_DIR/multimedia/minidlna/patches"
     cd "$FOLDER"
 
     LIBS="-lbz2" \
@@ -491,6 +693,7 @@ if [ ! -f "$FOLDER/__package_installed" ]; then
         --disable-rpath \
         --disable-nls \
         --disable-silent-rules \
+        --enable-thumbnail \
         --prefix="$TOMATOWARE_SYSROOT" \
     || handle_configure_error $?
 

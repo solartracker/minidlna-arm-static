@@ -88,32 +88,31 @@ download() {
     local source_url="$1"
     local source="$2"
     local target_dir="$3"
+    local cached_path="$CACHED_DIR/$source"
     local target_path="$target_dir/$source"
     local temp_path=""
-    local cached_path=""
 
-    if [ ! -f "$target_path" ]; then
-        if [ -n "$CACHED_DIR" ] && [ "$target_dir" != "$CACHED_DIR" ]; then
-            cached_path="$CACHED_DIR/$source"
-            if [ -f "$cached_path" ]; then
-                trap 'rm -f "$target_path"' EXIT INT TERM
-                cp -p "$cached_path" "$target_dir/"
-                trap - EXIT INT TERM
-                return 0
-            fi
-        fi
-        temp_path=$(mktemp "$target_path.XXXXXX")
-        trap '[ -n "$temp_path" ] && rm -f "$temp_path"' EXIT INT TERM
-        wget -O "$temp_path" "$source_url"
-        mv -f "$temp_path" "$target_path"
-        trap - EXIT INT TERM
-        if [ -n "$cached_path" ]; then
-            mkdir -p "$CACHED_DIR"
+    if [ ! -f "$cached_path" ]; then
+        mkdir -p "$CACHED_DIR"
+        if [ ! -f "$target_path" ]; then
+            temp_path=$(mktemp "$cached_path.XXXXXX")
+            trap 'rm -f "$temp_path"' EXIT INT TERM
+            wget -O "$temp_path" "$source_url"
+            mv -f "$temp_path" "$cached_path"
+            trap - EXIT INT TERM
+        else
             trap 'rm -f "$cached_path"' EXIT INT TERM
-            cp -p "$target_path" "$cached_path"
+            mv -f "$target_path" "$cached_path"
             trap - EXIT INT TERM
         fi
     fi
+
+    if [ ! -f "$target_path" ]; then
+        if [ -f "$cached_path" ]; then
+            ln -s "$cached_path" "$target_path"
+        fi
+    fi
+
     return 0
 }
 
@@ -186,7 +185,7 @@ echo "Now running under: $(readlink /proc/$$/exe)"
 
 PKG_ROOT=minidlna
 REBUILD_ALL=false
-MINIDLNA_THUMBNAILS_ENABLED=true
+MINIDLNA_THUMBNAILS_ENABLED=true # enabling increases file size by about 2MB
 SRC="$TOMATOWARE_SYSROOT/src/$PKG_ROOT"
 mkdir -p "$SRC"
 MAKE="make -j$(grep -c ^processor /proc/cpuinfo)" # parallelism
@@ -691,16 +690,16 @@ fi
 if $MINIDLNA_THUMBNAILS_ENABLED; then
 PKG_NAME=ffmpegthumbnailer
 PKG_VERSION=2.2.3
-PKG_SOURCE="${PKG_VERSION}.tar.gz"
-PKG_SOURCE_URL="https://github.com/dirkvdb/ffmpegthumbnailer/archive/refs/tags/${PKG_SOURCE}"
+PKG_SOURCE="${PKG_NAME}-${PKG_VERSION}.tar.gz"
+PKG_SOURCE_URL="https://github.com/dirkvdb/ffmpegthumbnailer/archive/refs/tags/${PKG_VERSION}.tar.gz"
 PKG_HASH="8c9b9057c6cc8bce9d11701af224c8139c940f734c439a595525e073b09d19b8"
 
 FOLDER="${PKG_NAME}-${PKG_VERSION}"
 mkdir -p "${SRC}/${PKG_NAME}" && cd "${SRC}/${PKG_NAME}"
 
 if $REBUILD_ALL; then
-    if [ -f "$FOLDER/Makefile" ]; then
-        cd "$FOLDER" && make uninstall && cd ..
+    if [ -f "$FOLDER/build/Makefile" ]; then
+        cd "$FOLDER/build" && make uninstall && cd ../..
     fi || true
     rm -rf "$FOLDER"
 fi || true
@@ -711,9 +710,7 @@ if [ ! -f "$FOLDER/__package_installed" ]; then
     unpack_archive_and_patch "$PKG_SOURCE" "$FOLDER" "${SCRIPT_DIR}/patches/${PKG_NAME}/${FOLDER}"
     cd "$FOLDER"
 
-    rm -rf build
-    mkdir -p build
-    cd build
+    rm -rf build && mkdir -p build && cd build
 
     cmake \
       -DCMAKE_INSTALL_PREFIX="$TOMATOWARE_SYSROOT" \

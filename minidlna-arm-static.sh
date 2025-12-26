@@ -98,12 +98,10 @@ download() {
             temp_path=$(mktemp "$cached_path.XXXXXX")
             trap 'rm -f "$temp_path"' EXIT INT TERM
             wget -O "$temp_path" "$source_url"
+            trap - EXIT INT TERM
             mv -f "$temp_path" "$cached_path"
-            trap - EXIT INT TERM
         else
-            trap 'rm -f "$cached_path"' EXIT INT TERM
             mv -f "$target_path" "$cached_path"
-            trap - EXIT INT TERM
         fi
     fi
 

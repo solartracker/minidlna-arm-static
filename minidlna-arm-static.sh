@@ -605,7 +605,7 @@ if [ ! -f "$FOLDER/__package_installed" ]; then
         --disable-decoders $(ffmpeg_options "--enable-decoder" "$FFMPEG_DECODERS") \
         --disable-parsers $(ffmpeg_options "--enable-parser" "$FFMPEG_PARSERS") \
         --disable-protocols $(ffmpeg_options "--enable-protocol" "$FFMPEG_PROTOCOLS") \
-        $(ffmpeg_enable "avfilter swcale" $MINIDLNA_THUMBNAILS_ENABLED) \
+        $(ffmpeg_enable "avfilter swscale" $MINIDLNA_THUMBNAILS_ENABLED) \
         --enable-zlib --disable-debug \
         --disable-rpath \
         --prefix="$TOMATOWARE_SYSROOT" \

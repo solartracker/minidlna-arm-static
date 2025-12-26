@@ -2,16 +2,16 @@
 ################################################################################
 # minidlna-arm-static.sh
 #
-# Raspberry Pi build script for a statically linked version of MiniDLNA media
+# Raspberry Pi build script for a statically linked version of MiniPKG_SOURCENA media
 # server, capable of running on any ARMv7 Linux device.
 #
-# MiniDLNA (also known as ReadyMedia) is a lightweight, simple-to-configure
-# media server that implements the DLNA/UPnP-AV standard. It allows you to
+# MiniPKG_SOURCENA (also known as ReadyMedia) is a lightweight, simple-to-configure
+# media server that implements the PKG_SOURCENA/UPnP-AV standard. It allows you to
 # stream music, videos, and photos from a Linux-based device, such as a
-# Raspberry Pi, to DLNA-compatible clients like smart TVs, game consoles, or
+# Raspberry Pi, to PKG_SOURCENA-compatible clients like smart TVs, game consoles, or
 # media players.
 #
-# NOTE: Compiling MiniDLNA (and especially FFmpeg) on a Raspberry Pi can
+# NOTE: Compiling MiniPKG_SOURCENA (and especially FFmpeg) on a Raspberry Pi can
 # generate significant heat, often exceeding 80°C in stock cases. Upgrading to
 # an aluminum case with copper shims and good thermal paste provides effective
 # passive cooling that dramatically improves heat dissipation, keeping CPU
@@ -77,7 +77,7 @@ handle_configure_error() {
 ################################################################################
 # Install the build environment
 
-TOMATOWARE_URL="https://github.com/lancethepants/tomatoware/releases/download/v5.0/arm-soft-mmc.tgz"
+TOMATOWARE_PKG_SOURCE_URL="https://github.com/lancethepants/tomatoware/releases/download/v5.0/arm-soft-mmc.tgz"
 TOMATOWARE_SHA256="ff490819a16f5ddb80ec095342ac005a444b6ebcd3ed982b8879134b2b036fcc"
 TOMATOWARE_PKG="arm-soft-mmc-5.0.tgz"
 TOMATOWARE_DIR="tomatoware-5.0"
@@ -92,7 +92,7 @@ if [ ! -d "$TOMATOWARE_PATH" ]; then
     if [ ! -f "$TOMATOWARE_PKG" ]; then
         PKG_TMP=$(mktemp "$TOMATOWARE_PKG.XXXXXX")
         trap '[ -n "$PKG_TMP" ] && rm -f "$PKG_TMP"' EXIT INT TERM
-        wget -O "$PKG_TMP" "$TOMATOWARE_URL"
+        wget -O "$PKG_TMP" "$TOMATOWARE_PKG_SOURCE_URL"
         mv -f "$PKG_TMP" "$TOMATOWARE_PKG"
         trap - EXIT INT TERM
     fi
@@ -280,12 +280,14 @@ update_patch_library() {
 ################################################################################
 # libogg-1.3.6
 
-PKG_MAIN=libogg
-mkdir -p "$SRC/$PKG_MAIN" && cd "$SRC/$PKG_MAIN"
-DL="libogg-1.3.6.tar.gz"
-DL_HASH="83e6704730683d004d20e21b8f7f55dcb3383cdf84c0daedf30bde175f774638"
-URL="https://ftp.osuosl.org/pub/xiph/releases/ogg/$DL"
-FOLDER="${DL%.tar.gz*}"
+PKG_NAME=libogg
+PKG_VERSION=1.3.6
+PKG_SOURCE="${PKG_NAME}-${PKG_VERSION}.tar.gz"
+PKG_SOURCE_URL="https://ftp.osuosl.org/pub/xiph/releases/ogg/${PKG_SOURCE}"
+PKG_HASH="83e6704730683d004d20e21b8f7f55dcb3383cdf84c0daedf30bde175f774638"
+
+FOLDER="${PKG_NAME}-${PKG_VERSION}"
+mkdir -p "${SRC}/${PKG_NAME}" && cd "${SRC}/${PKG_NAME}"
 
 if $REBUILD_ALL; then
     if [ -f "$FOLDER/Makefile" ]; then
@@ -295,10 +297,10 @@ if $REBUILD_ALL; then
 fi || true
 
 if [ ! -f "$FOLDER/__package_installed" ]; then
-    [ ! -f "$DL" ] && wget "$URL"
+    [ ! -f "$PKG_SOURCE" ] && wget "$PKG_SOURCE_URL"
 
-    check_sha256 "$DL" "$DL_HASH"
-    unpack_archive_and_patch "./$DL" "./$FOLDER"
+    check_sha256 "$PKG_SOURCE" "$PKG_HASH"
+    unpack_archive_and_patch "$PKG_SOURCE" "$FOLDER"
     cd "$FOLDER"
 
     ./configure \
@@ -316,12 +318,14 @@ fi
 ################################################################################
 # libvorbis-1.3.7
 
-PKG_MAIN=libvorbis
-mkdir -p "$SRC/$PKG_MAIN" && cd "$SRC/$PKG_MAIN"
-DL="libvorbis-1.3.7.tar.gz"
-DL_HASH="0e982409a9c3fc82ee06e08205b1355e5c6aa4c36bca58146ef399621b0ce5ab"
-URL="https://ftp.osuosl.org/pub/xiph/releases/vorbis/libvorbis-1.3.7.tar.gz"
-FOLDER="${DL%.tar.gz*}"
+PKG_NAME=libvorbis
+PKG_VERSION=1.3.7
+PKG_SOURCE="${PKG_NAME}-${PKG_VERSION}.tar.gz"
+PKG_SOURCE_URL="https://ftp.osuosl.org/pub/xiph/releases/vorbis/${PKG_SOURCE}"
+PKG_HASH="0e982409a9c3fc82ee06e08205b1355e5c6aa4c36bca58146ef399621b0ce5ab"
+
+FOLDER="${PKG_NAME}-${PKG_VERSION}"
+mkdir -p "${SRC}/${PKG_NAME}" && cd "${SRC}/${PKG_NAME}"
 
 if $REBUILD_ALL; then
     if [ -f "$FOLDER/Makefile" ]; then
@@ -331,10 +335,10 @@ if $REBUILD_ALL; then
 fi || true
 
 if [ ! -f "$FOLDER/__package_installed" ]; then
-    [ ! -f "$DL" ] && wget "$URL"
+    [ ! -f "$PKG_SOURCE" ] && wget "$PKG_SOURCE_URL"
 
-    check_sha256 "$DL" "$DL_HASH"
-    unpack_archive_and_patch "./$DL" "./$FOLDER"
+    check_sha256 "$PKG_SOURCE" "$PKG_HASH"
+    unpack_archive_and_patch "$PKG_SOURCE" "$FOLDER"
     cd "$FOLDER"
 
     ./configure \
@@ -353,12 +357,14 @@ fi
 ################################################################################
 # flac-1.5.0
 
-PKG_MAIN=flac
-mkdir -p "$SRC/$PKG_MAIN" && cd "$SRC/$PKG_MAIN"
-DL="flac-1.5.0.tar.xz"
-DL_HASH="f2c1c76592a82ffff8413ba3c4a1299b6c7ab06c734dee03fd88630485c2b920"
-URL="https://ftp.osuosl.org/pub/xiph/releases/flac/$DL"
-FOLDER="${DL%.tar.xz*}"
+PKG_NAME=flac
+PKG_VERSION=1.5.0
+PKG_SOURCE="${PKG_NAME}-${PKG_VERSION}.tar.xz"
+PKG_SOURCE_URL="https://ftp.osuosl.org/pub/xiph/releases/flac/${PKG_SOURCE}"
+PKG_HASH="f2c1c76592a82ffff8413ba3c4a1299b6c7ab06c734dee03fd88630485c2b920"
+
+FOLDER="${PKG_NAME}-${PKG_VERSION}"
+mkdir -p "${SRC}/${PKG_NAME}" && cd "${SRC}/${PKG_NAME}"
 
 if $REBUILD_ALL; then
     if [ -f "$FOLDER/Makefile" ]; then
@@ -368,10 +374,10 @@ if $REBUILD_ALL; then
 fi || true
 
 if [ ! -f "$FOLDER/__package_installed" ]; then
-    [ ! -f "$DL" ] && wget "$URL"
+    [ ! -f "$PKG_SOURCE" ] && wget "$PKG_SOURCE_URL"
 
-    check_sha256 "$DL" "$DL_HASH"
-    unpack_archive_and_patch "./$DL" "./$FOLDER"
+    check_sha256 "$PKG_SOURCE" "$PKG_HASH"
+    unpack_archive_and_patch "$PKG_SOURCE" "$FOLDER"
     cd "$FOLDER"
 
     ./configure \
@@ -397,12 +403,14 @@ fi
 ################################################################################
 # libid3tag-0.15.1b
 
-PKG_MAIN=libid3tag
-mkdir -p "$SRC/$PKG_MAIN" && cd "$SRC/$PKG_MAIN"
-DL="libid3tag-0.15.1b.tar.gz"
-DL_HASH="63da4f6e7997278f8a3fef4c6a372d342f705051d1eeb6a46a86b03610e26151"
-URL="https://downloads.sourceforge.net/project/mad/libid3tag/0.15.1b/$DL"
-FOLDER="libid3tag-0.15.1b"
+PKG_NAME=libid3tag
+PKG_VERSION=0.15.1b
+PKG_SOURCE="${PKG_NAME}-${PKG_VERSION}.tar.gz"
+PKG_SOURCE_URL="https://downloads.sourceforge.net/project/mad/libid3tag/${PKG_VERSION}/${PKG_SOURCE}"
+PKG_HASH="63da4f6e7997278f8a3fef4c6a372d342f705051d1eeb6a46a86b03610e26151"
+
+FOLDER="${PKG_NAME}-${PKG_VERSION}"
+mkdir -p "${SRC}/${PKG_NAME}" && cd "${SRC}/${PKG_NAME}"
 
 if [ $REBUILD_ALL; then
     if [ -f "$FOLDER/Makefile" ]; then
@@ -412,10 +420,10 @@ if [ $REBUILD_ALL; then
 fi || true
 
 if [ ! -f "$FOLDER/__package_installed" ]; then
-    [ ! -f "$DL" ] && wget "$URL"
+    [ ! -f "$PKG_SOURCE" ] && wget "$PKG_SOURCE_URL"
 
-    check_sha256 "$DL" "$DL_HASH"
-    unpack_archive_and_patch "./$DL" "./$FOLDER"
+    check_sha256 "$PKG_SOURCE" "$PKG_HASH"
+    unpack_archive_and_patch "$PKG_SOURCE" "$FOLDER"
     cd "$FOLDER"
 
     ./configure \
@@ -437,12 +445,14 @@ fi
 ################################################################################
 # libexif-0.6.25
 
-PKG_MAIN=libexif
-mkdir -p "$SRC/$PKG_MAIN" && cd "$SRC/$PKG_MAIN"
-DL="libexif-0.6.25.tar.gz"
-DL_HASH="16fdfa59cf9d301a9ccd5c1bc2fe05c78ee0ee2bf96e39640039e3dc0fd593cb"
-URL="https://github.com/libexif/libexif/releases/download/v0.6.25/$DL"
-FOLDER="${DL%.tar.gz*}"
+PKG_NAME=libexif
+PKG_VERSION=0.6.25
+PKG_SOURCE="${PKG_NAME}-${PKG_VERSION}.tar.gz"
+PKG_SOURCE_URL="https://github.com/libexif/libexif/releases/download/v${PKG_VERSION}/${PKG_SOURCE}"
+PKG_HASH="16fdfa59cf9d301a9ccd5c1bc2fe05c78ee0ee2bf96e39640039e3dc0fd593cb"
+
+FOLDER="${PKG_NAME}-${PKG_VERSION}"
+mkdir -p "${SRC}/${PKG_NAME}" && cd "${SRC}/${PKG_NAME}"
 
 if $REBUILD_ALL; then
     if [ -f "$FOLDER/Makefile" ]; then
@@ -452,10 +462,10 @@ if $REBUILD_ALL; then
 fi || true
 
 if [ ! -f "$FOLDER/__package_installed" ]; then
-    [ ! -f "$DL" ] && wget "$URL"
+    [ ! -f "$PKG_SOURCE" ] && wget "$PKG_SOURCE_URL"
 
-    check_sha256 "$DL" "$DL_HASH"
-    unpack_archive_and_patch "./$DL" "./$FOLDER"
+    check_sha256 "$PKG_SOURCE" "$PKG_HASH"
+    unpack_archive_and_patch "$PKG_SOURCE" "$FOLDER"
     cd "$FOLDER"
 
     ./configure \
@@ -478,12 +488,14 @@ fi
 ################################################################################
 # jpeg-9f
 
-PKG_MAIN=jpeg
-mkdir -p "$SRC/$PKG_MAIN" && cd "$SRC/$PKG_MAIN"
-DL="jpegsrc.v9f.tar.gz"
-DL_HASH="04705c110cb2469caa79fb71fba3d7bf834914706e9641a4589485c1f832565b"
-URL="https://www.ijg.org/files/$DL"
-FOLDER="jpeg-9f"
+PKG_NAME=jpeg
+PKG_VERSION=9f
+PKG_SOURCE="${PKG_NAME}src.v${PKG_VERSION}.tar.gz"
+PKG_SOURCE_URL="https://www.ijg.org/files/$PKG_SOURCE"
+PKG_HASH="04705c110cb2469caa79fb71fba3d7bf834914706e9641a4589485c1f832565b"
+
+FOLDER="${PKG_NAME}-${PKG_VERSION}"
+mkdir -p "${SRC}/${PKG_NAME}" && cd "${SRC}/${PKG_NAME}"
 
 if $REBUILD_ALL; then
     if [ -f "$FOLDER/Makefile" ]; then
@@ -493,10 +505,10 @@ if $REBUILD_ALL; then
 fi || true
 
 if [ ! -f "$FOLDER/__package_installed" ]; then
-    [ ! -f "$DL" ] && wget "$URL"
+    [ ! -f "$PKG_SOURCE" ] && wget "$PKG_SOURCE_URL"
 
-    check_sha256 "$DL" "$DL_HASH"
-    unpack_archive_and_patch "./$DL" "./$FOLDER"
+    check_sha256 "$PKG_SOURCE" "$PKG_HASH"
+    unpack_archive_and_patch "$PKG_SOURCE" "$FOLDER"
     cd "$FOLDER"
 
     ./configure \
@@ -515,12 +527,15 @@ fi
 ################################################################################
 # libpng-1.6.53
 
-PKG_MAIN=libpng
-mkdir -p "$SRC/$PKG_MAIN" && cd "$SRC/$PKG_MAIN"
-DL="libpng-1.6.53.tar.xz"
-DL_HASH="1d3fb8ccc2932d04aa3663e22ef5ef490244370f4e568d7850165068778d98d4"
-URL="https://downloads.sourceforge.net/project/libpng/libpng16/1.6.53/$DL"
-FOLDER="${DL%.tar.xz*}"
+if $MINIDLNA_THUMBNAILS_ENABLED; then
+PKG_NAME=libpng
+PKG_VERSION=1.6.53
+PKG_SOURCE="${PKG_NAME}-${PKG_VERSION}.tar.xz"
+PKG_SOURCE_URL="https://downloads.sourceforge.net/project/libpng/libpng16/${PKG_VERSION}/${PKG_SOURCE}"
+PKG_HASH="1d3fb8ccc2932d04aa3663e22ef5ef490244370f4e568d7850165068778d98d4"
+
+FOLDER="${PKG_NAME}-${PKG_VERSION}"
+mkdir -p "${SRC}/${PKG_NAME}" && cd "${SRC}/${PKG_NAME}"
 
 if $REBUILD_ALL; then
     if [ -f "$FOLDER/Makefile" ]; then
@@ -530,10 +545,10 @@ if $REBUILD_ALL; then
 fi || true
 
 if [ ! -f "$FOLDER/__package_installed" ]; then
-    [ ! -f "$DL" ] && wget "$URL"
+    [ ! -f "$PKG_SOURCE" ] && wget "$PKG_SOURCE_URL"
 
-    check_sha256 "$DL" "$DL_HASH"
-    unpack_archive_and_patch "./$DL" "./$FOLDER"
+    check_sha256 "$PKG_SOURCE" "$PKG_HASH"
+    unpack_archive_and_patch "$PKG_SOURCE" "$FOLDER"
     cd "$FOLDER"
 
     ./configure \
@@ -550,16 +565,19 @@ if [ ! -f "$FOLDER/__package_installed" ]; then
 
     touch __package_installed
 fi
+fi
 
 ################################################################################
 # ffmpeg-6.1.2
 
-PKG_MAIN=ffmpeg
-mkdir -p "$SRC/$PKG_MAIN" && cd "$SRC/$PKG_MAIN"
-DL="ffmpeg-6.1.2.tar.gz"
-DL_HASH="def310d21e40c39e6971a6bcd07fba78ca3ce39cc01ffda4dca382599dc06312"
-URL="https://ffmpeg.org/releases/$DL"
-FOLDER="${DL%.tar.gz*}"
+PKG_NAME=ffmpeg
+PKG_VERSION=6.1.2
+PKG_SOURCE="${PKG_NAME}-${PKG_VERSION}.tar.gz"
+PKG_SOURCE_URL="https://ffmpeg.org/releases/${PKG_SOURCE}"
+PKG_HASH="def310d21e40c39e6971a6bcd07fba78ca3ce39cc01ffda4dca382599dc06312"
+
+FOLDER="${PKG_NAME}-${PKG_VERSION}"
+mkdir -p "${SRC}/${PKG_NAME}" && cd "${SRC}/${PKG_NAME}"
 
 ffmpeg_options() {
     local v
@@ -582,10 +600,14 @@ if $REBUILD_ALL; then
 fi || true
 
 if [ ! -f "$FOLDER/__package_installed" ]; then
-    [ ! -f "$DL" ] && wget "$URL"
+    [ ! -f "$PKG_SOURCE" ] && wget "$PKG_SOURCE_URL"
 
-    check_sha256 "$DL" "$DL_HASH"
-    unpack_archive_and_patch "./$DL" "./$FOLDER" "$SCRIPT_DIR/patches/ffmpeg/ffmpeg-6.1.2"
+    check_sha256 "$PKG_SOURCE" "$PKG_HASH"
+    if $MINIDLNA_THUMBNAILS_ENABLED; then
+        unpack_archive_and_patch "$PKG_SOURCE" "$FOLDER" "${SCRIPT_DIR}/patches/${PKG_NAME}/${FOLDER}"
+    else
+        unpack_archive_and_patch "$PKG_SOURCE" "$FOLDER"
+    fi
     cd "$FOLDER"
 
     FFMPEG_DECODERS="aac ac3 atrac3 h264 jpegls mp3 mpeg1video mpeg2video mpeg4 mpegvideo png wmav1 wmav2 svq3"
@@ -595,19 +617,18 @@ if [ ! -f "$FOLDER/__package_installed" ]; then
 
     ./configure \
         --arch=arm --cpu=cortex-a9 --disable-neon --disable-vfp --target-os=linux \
-        --enable-static --disable-shared --disable-doc \
+        --enable-static --disable-shared --disable-rpath --disable-debug --disable-doc \
         --enable-gpl --enable-version3 --enable-nonfree \
-        --enable-pthreads --enable-small --disable-encoders --disable-filters \
-        --disable-devices --disable-ffmpeg --disable-ffplay \
-        --disable-ffprobe --disable-avdevice \
-        --disable-hwaccels --disable-network --disable-bsfs \
+        --enable-pthreads --enable-small \
+        $(ffmpeg_enable "avfilter swscale" $MINIDLNA_THUMBNAILS_ENABLED) \
+        --disable-ffmpeg --disable-ffplay --disable-ffprobe \
+        --disable-encoders --disable-filters --disable-muxers --disable-devices \
+        --disable-avdevice --disable-hwaccels --disable-network --disable-bsfs \
         --enable-demuxers $(ffmpeg_options "--disable-demuxer" "$FFMPEG_DISABLED_DEMUXERS") \
         --disable-decoders $(ffmpeg_options "--enable-decoder" "$FFMPEG_DECODERS") \
         --disable-parsers $(ffmpeg_options "--enable-parser" "$FFMPEG_PARSERS") \
         --disable-protocols $(ffmpeg_options "--enable-protocol" "$FFMPEG_PROTOCOLS") \
-        $(ffmpeg_enable "avfilter swscale" $MINIDLNA_THUMBNAILS_ENABLED) \
-        --enable-zlib --disable-debug \
-        --disable-rpath \
+        --enable-zlib \
         --prefix="$TOMATOWARE_SYSROOT" \
     || handle_configure_error $?
 
@@ -621,15 +642,14 @@ fi
 # ffmpegthumbnailer-2.2.3
 
 if $MINIDLNA_THUMBNAILS_ENABLED; then
-PKG_MAIN=ffmpegthumbnailer
-mkdir -p "$SRC/$PKG_MAIN" && cd "$SRC/$PKG_MAIN"
-DL="2.2.3.tar.gz"
-DL_HASH="8c9b9057c6cc8bce9d11701af224c8139c940f734c439a595525e073b09d19b8"
-URL="https://github.com/dirkvdb/ffmpegthumbnailer/archive/refs/tags/$DL"
-#DL="ffmpegthumbnailer-2.2.2.tar.bz2"
-#DL_HASH="1cb24059c38223f657b300c84dd80491b7040d4b69471c4fea69be862bc99b5b"
-#URL="https://github.com/dirkvdb/ffmpegthumbnailer/releases/download/2.2.2/$DL"
-FOLDER="ffmpegthumbnailer-2.2.3"
+PKG_NAME=ffmpegthumbnailer
+PKG_VERSION=2.2.3
+PKG_SOURCE="${PKG_VERSION}.tar.gz"
+PKG_SOURCE_URL="https://github.com/dirkvdb/ffmpegthumbnailer/archive/refs/tags/${PKG_SOURCE}"
+PKG_HASH="8c9b9057c6cc8bce9d11701af224c8139c940f734c439a595525e073b09d19b8"
+
+FOLDER="${PKG_NAME}-${PKG_VERSION}"
+mkdir -p "${SRC}/${PKG_NAME}" && cd "${SRC}/${PKG_NAME}"
 
 if $REBUILD_ALL; then
     if [ -f "$FOLDER/Makefile" ]; then
@@ -639,10 +659,10 @@ if $REBUILD_ALL; then
 fi || true
 
 if [ ! -f "$FOLDER/__package_installed" ]; then
-    [ ! -f "$DL" ] && wget "$URL"
+    [ ! -f "$PKG_SOURCE" ] && wget "$PKG_SOURCE_URL"
 
-    check_sha256 "$DL" "$DL_HASH"
-    unpack_archive_and_patch "./$DL" "./$FOLDER" "$SCRIPT_DIR/patches/ffmpegthumbnailer/ffmpegthumbnailer-2.2.3"
+    check_sha256 "$PKG_SOURCE" "$PKG_HASH"
+    unpack_archive_and_patch "$PKG_SOURCE" "$FOLDER" "${SCRIPT_DIR}/patches/${PKG_NAME}/${FOLDER}"
     cd "$FOLDER"
 
     rm -rf build
@@ -679,12 +699,14 @@ fi
 ################################################################################
 # minidlna-1.3.3
 
-PKG_MAIN=minidlna
-mkdir -p "$SRC/$PKG_MAIN" && cd "$SRC/$PKG_MAIN"
-DL="minidlna-1.3.3.tar.gz"
-DL_HASH="39026c6d4a139b9180192d1c37225aa3376fdf4f1a74d7debbdbb693d996afa4"
-URL="https://downloads.sourceforge.net/project/minidlna/minidlna/1.3.3/$DL"
-FOLDER="${DL%.tar.gz*}"
+PKG_NAME=minidlna
+PKG_VERSION=1.3.3
+PKG_SOURCE="${PKG_NAME}-${PKG_VERSION}.tar.gz"
+PKG_SOURCE_URL="https://downloads.sourceforge.net/project/minidlna/minidlna/${PKG_VERSION}/${PKG_SOURCE}"
+PKG_HASH="39026c6d4a139b9180192d1c37225aa3376fdf4f1a74d7debbdbb693d996afa4"
+
+FOLDER="${PKG_NAME}-${PKG_VERSION}"
+mkdir -p "${SRC}/${PKG_NAME}" && cd "${SRC}/${PKG_NAME}"
 
 if $REBUILD_ALL; then
     if [ -f "$FOLDER/Makefile" ]; then
@@ -694,10 +716,14 @@ if $REBUILD_ALL; then
 fi || true
 
 if [ ! -f "$FOLDER/__package_installed" ]; then
-    [ ! -f "$DL" ] && wget "$URL"
+    [ ! -f "$PKG_SOURCE" ] && wget "$PKG_SOURCE_URL"
 
-    check_sha256 "$DL" "$DL_HASH"
-    unpack_archive_and_patch "./$DL" "./$FOLDER" "$SCRIPT_DIR/patches/minidlna/minidlna-1.3.3"
+    check_sha256 "$PKG_SOURCE" "$PKG_HASH"
+    if $MINIDLNA_THUMBNAILS_ENABLED; then
+        unpack_archive_and_patch "$PKG_SOURCE" "$FOLDER" "${SCRIPT_DIR}/patches/${PKG_NAME}/${FOLDER}"
+    else
+        unpack_archive_and_patch "$PKG_SOURCE" "$FOLDER"
+    fi
     cd "$FOLDER"
 
     if $MINIDLNA_THUMBNAILS_ENABLED; then

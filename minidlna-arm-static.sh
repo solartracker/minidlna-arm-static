@@ -36,6 +36,7 @@
 PATH_CMD="$(readlink -f -- "$0")"
 SCRIPT_DIR="$(dirname -- "$(readlink -f -- "$0")")"
 PARENT_DIR="$(dirname -- "$(dirname -- "$(readlink -f -- "$0")")")"
+CACHED_DIR="${PARENT_DIR}/tomatoware-downloads"
 set -e
 set -x
 
@@ -44,8 +45,12 @@ set -x
 
 # Checksum verification for downloaded file
 check_sha256() {
-    file="$1"
-    expected="$2"
+    [ -n "$1" ] || return 1
+    [ -n "$2" ] || return 1
+
+    local file="$1"
+    local expected="$2"
+    local actual=""
 
     if [ ! -f "$file" ]; then
         echo "ERROR: File not found: $file"
@@ -74,14 +79,52 @@ handle_configure_error() {
     return $rc
 }
 
+download() {
+    [ -n "$1" ]          || return 1
+    [ -n "$2" ]          || return 1
+    [ -n "$3" ]          || return 1
+    [ -n "$CACHED_DIR" ] || return 1
+
+    local source_url="$1"
+    local source="$2"
+    local target_dir="$3"
+    local target_path="$target_dir/$source"
+    local temp_path=""
+    local cached_path=""
+
+    if [ ! -f "$target_path" ]; then
+        if [ -n "$CACHED_DIR" ] && [ "$target_dir" != "$CACHED_DIR" ]; then
+            cached_path="$CACHED_DIR/$source"
+            if [ -f "$cached_path" ]; then
+                trap 'rm -f "$target_path"' EXIT INT TERM
+                cp -p "$cached_path" "$target_dir/"
+                trap - EXIT INT TERM
+                return 0
+            fi
+        fi
+        temp_path=$(mktemp "$target_path.XXXXXX")
+        trap '[ -n "$temp_path" ] && rm -f "$temp_path"' EXIT INT TERM
+        wget -O "$temp_path" "$source_url"
+        mv -f "$temp_path" "$target_path"
+        trap - EXIT INT TERM
+        if [ -n "$cached_path" ]; then
+            mkdir -p "$CACHED_DIR"
+            trap 'rm -f "$cached_path"' EXIT INT TERM
+            cp -p "$target_path" "$cached_path"
+            trap - EXIT INT TERM
+        fi
+    fi
+    return 0
+}
+
 ################################################################################
 # Install the build environment
 
 TOMATOWARE_PKG_SOURCE_URL="https://github.com/lancethepants/tomatoware/releases/download/v5.0/arm-soft-mmc.tgz"
-TOMATOWARE_SHA256="ff490819a16f5ddb80ec095342ac005a444b6ebcd3ed982b8879134b2b036fcc"
+TOMATOWARE_PKG_HASH="ff490819a16f5ddb80ec095342ac005a444b6ebcd3ed982b8879134b2b036fcc"
 TOMATOWARE_PKG="arm-soft-mmc-5.0.tgz"
 TOMATOWARE_DIR="tomatoware-5.0"
-TOMATOWARE_PATH="$PARENT_DIR/$TOMATOWARE_DIR"
+TOMATOWARE_PATH="${PARENT_DIR}/${TOMATOWARE_DIR}"
 TOMATOWARE_SYSROOT="/mmc" # or, whatever your tomatoware distribution uses for sysroot
 
 # Check if Tomatoware exists and install it, if needed
@@ -89,20 +132,14 @@ if [ ! -d "$TOMATOWARE_PATH" ]; then
     echo "Tomatoware not found at $TOMATOWARE_PATH. Installing..."
     echo ""
     cd $PARENT_DIR
-    if [ ! -f "$TOMATOWARE_PKG" ]; then
-        PKG_TMP=$(mktemp "$TOMATOWARE_PKG.XXXXXX")
-        trap '[ -n "$PKG_TMP" ] && rm -f "$PKG_TMP"' EXIT INT TERM
-        wget -O "$PKG_TMP" "$TOMATOWARE_PKG_SOURCE_URL"
-        mv -f "$PKG_TMP" "$TOMATOWARE_PKG"
-        trap - EXIT INT TERM
-    fi
-
-    check_sha256 "$TOMATOWARE_PKG" "$TOMATOWARE_SHA256"
+    TOMATOWARE_PKG_PATH="$CACHED_DIR/$TOMATOWARE_PKG"
+    download "$TOMATOWARE_PKG_SOURCE_URL" "$TOMATOWARE_PKG" "$CACHED_DIR"
+    check_sha256 "$TOMATOWARE_PKG_PATH" "$TOMATOWARE_PKG_HASH"
 
     DIR_TMP=$(mktemp -d "$TOMATOWARE_DIR.XXXXXX")
     trap '[ -n "$DIR_TMP" ] && rm -rf "$DIR_TMP"' EXIT INT TERM
     mkdir -p "$DIR_TMP"
-    tar xzvf "$TOMATOWARE_PKG" -C "$DIR_TMP"
+    tar xzvf "$TOMATOWARE_PKG_PATH" -C "$DIR_TMP"
     mv -f "$DIR_TMP" "$TOMATOWARE_DIR"
     trap - EXIT INT TERM
 fi
@@ -149,7 +186,7 @@ echo "Now running under: $(readlink /proc/$$/exe)"
 
 PKG_ROOT=minidlna
 REBUILD_ALL=false
-MINIDLNA_THUMBNAILS_ENABLED=false
+MINIDLNA_THUMBNAILS_ENABLED=true
 SRC="$TOMATOWARE_SYSROOT/src/$PKG_ROOT"
 mkdir -p "$SRC"
 MAKE="make -j$(grep -c ^processor /proc/cpuinfo)" # parallelism
@@ -162,6 +199,9 @@ export PKG_CONFIG_PATH="$TOMATOWARE_SYSROOT/lib/pkgconfig"
 # Package management
 
 apply_patch() {
+    [ -n "$1" ] || return 1
+    [ -n "$2" ] || return 1
+
     local patch_path="$1"
     local source_dir="$2"
 
@@ -185,6 +225,9 @@ apply_patch() {
 }
 
 apply_patches_all() {
+    [ -n "$1" ] || return 1
+    [ -n "$2" ] || return 1
+
     local patch_dir="$1"
     local source_dir="$2"
     local patch_file=""
@@ -207,6 +250,9 @@ apply_patches_all() {
 }
 
 unpack_archive() {
+    [ -n "$1" ] || return 1
+    [ -n "$2" ] || return 1
+
     local source_path="$1"
     local target_dir="$2"
 
@@ -236,6 +282,9 @@ unpack_archive() {
 }
 
 unpack_archive_and_patch() {
+    [ -n "$1" ] || return 1
+    [ -n "$2" ] || return 1
+
     local source_path="$1"
     local target_dir="$2"
     local patch_dir="$3"
@@ -262,6 +311,8 @@ unpack_archive_and_patch() {
 }
 
 update_patch_library() {
+    [ -n "$PARENT_DIR" ] || return 1
+
     ENTWARE_PACKAGES_DIR="$PARENT_DIR/entware-packages"
     cd $PARENT_DIR
 
@@ -297,8 +348,7 @@ if $REBUILD_ALL; then
 fi || true
 
 if [ ! -f "$FOLDER/__package_installed" ]; then
-    [ ! -f "$PKG_SOURCE" ] && wget "$PKG_SOURCE_URL"
-
+    download "$PKG_SOURCE_URL" "$PKG_SOURCE" "."
     check_sha256 "$PKG_SOURCE" "$PKG_HASH"
     unpack_archive_and_patch "$PKG_SOURCE" "$FOLDER"
     cd "$FOLDER"
@@ -335,8 +385,7 @@ if $REBUILD_ALL; then
 fi || true
 
 if [ ! -f "$FOLDER/__package_installed" ]; then
-    [ ! -f "$PKG_SOURCE" ] && wget "$PKG_SOURCE_URL"
-
+    download "$PKG_SOURCE_URL" "$PKG_SOURCE" "."
     check_sha256 "$PKG_SOURCE" "$PKG_HASH"
     unpack_archive_and_patch "$PKG_SOURCE" "$FOLDER"
     cd "$FOLDER"
@@ -374,8 +423,7 @@ if $REBUILD_ALL; then
 fi || true
 
 if [ ! -f "$FOLDER/__package_installed" ]; then
-    [ ! -f "$PKG_SOURCE" ] && wget "$PKG_SOURCE_URL"
-
+    download "$PKG_SOURCE_URL" "$PKG_SOURCE" "."
     check_sha256 "$PKG_SOURCE" "$PKG_HASH"
     unpack_archive_and_patch "$PKG_SOURCE" "$FOLDER"
     cd "$FOLDER"
@@ -420,8 +468,7 @@ if [ $REBUILD_ALL; then
 fi || true
 
 if [ ! -f "$FOLDER/__package_installed" ]; then
-    [ ! -f "$PKG_SOURCE" ] && wget "$PKG_SOURCE_URL"
-
+    download "$PKG_SOURCE_URL" "$PKG_SOURCE" "."
     check_sha256 "$PKG_SOURCE" "$PKG_HASH"
     unpack_archive_and_patch "$PKG_SOURCE" "$FOLDER"
     cd "$FOLDER"
@@ -462,8 +509,7 @@ if $REBUILD_ALL; then
 fi || true
 
 if [ ! -f "$FOLDER/__package_installed" ]; then
-    [ ! -f "$PKG_SOURCE" ] && wget "$PKG_SOURCE_URL"
-
+    download "$PKG_SOURCE_URL" "$PKG_SOURCE" "."
     check_sha256 "$PKG_SOURCE" "$PKG_HASH"
     unpack_archive_and_patch "$PKG_SOURCE" "$FOLDER"
     cd "$FOLDER"
@@ -505,8 +551,7 @@ if $REBUILD_ALL; then
 fi || true
 
 if [ ! -f "$FOLDER/__package_installed" ]; then
-    [ ! -f "$PKG_SOURCE" ] && wget "$PKG_SOURCE_URL"
-
+    download "$PKG_SOURCE_URL" "$PKG_SOURCE" "."
     check_sha256 "$PKG_SOURCE" "$PKG_HASH"
     unpack_archive_and_patch "$PKG_SOURCE" "$FOLDER"
     cd "$FOLDER"
@@ -545,8 +590,7 @@ if $REBUILD_ALL; then
 fi || true
 
 if [ ! -f "$FOLDER/__package_installed" ]; then
-    [ ! -f "$PKG_SOURCE" ] && wget "$PKG_SOURCE_URL"
-
+    download "$PKG_SOURCE_URL" "$PKG_SOURCE" "."
     check_sha256 "$PKG_SOURCE" "$PKG_HASH"
     unpack_archive_and_patch "$PKG_SOURCE" "$FOLDER"
     cd "$FOLDER"
@@ -580,12 +624,16 @@ FOLDER="${PKG_NAME}-${PKG_VERSION}"
 mkdir -p "${SRC}/${PKG_NAME}" && cd "${SRC}/${PKG_NAME}"
 
 ffmpeg_options() {
+    [ -n "$1" ] || return 1
+    [ -n "$2" ] || return 1
     local v
     for v in $2; do printf -- "%s=%s " $1 $v; done
     return 0
 }
 
 ffmpeg_enable() {
+    [ -n "$1" ] || return 1
+    [ -n "$2" ] || return 1
     local p n
     $2 && p=enable || p=disable
     for n in $1; do printf -- "--%s-%s " "$p" "$n"; done
@@ -600,8 +648,7 @@ if $REBUILD_ALL; then
 fi || true
 
 if [ ! -f "$FOLDER/__package_installed" ]; then
-    [ ! -f "$PKG_SOURCE" ] && wget "$PKG_SOURCE_URL"
-
+    download "$PKG_SOURCE_URL" "$PKG_SOURCE" "."
     check_sha256 "$PKG_SOURCE" "$PKG_HASH"
     if $MINIDLNA_THUMBNAILS_ENABLED; then
         unpack_archive_and_patch "$PKG_SOURCE" "$FOLDER" "${SCRIPT_DIR}/patches/${PKG_NAME}/${FOLDER}"
@@ -659,8 +706,7 @@ if $REBUILD_ALL; then
 fi || true
 
 if [ ! -f "$FOLDER/__package_installed" ]; then
-    [ ! -f "$PKG_SOURCE" ] && wget "$PKG_SOURCE_URL"
-
+    download "$PKG_SOURCE_URL" "$PKG_SOURCE" "."
     check_sha256 "$PKG_SOURCE" "$PKG_HASH"
     unpack_archive_and_patch "$PKG_SOURCE" "$FOLDER" "${SCRIPT_DIR}/patches/${PKG_NAME}/${FOLDER}"
     cd "$FOLDER"
@@ -716,8 +762,7 @@ if $REBUILD_ALL; then
 fi || true
 
 if [ ! -f "$FOLDER/__package_installed" ]; then
-    [ ! -f "$PKG_SOURCE" ] && wget "$PKG_SOURCE_URL"
-
+    download "$PKG_SOURCE_URL" "$PKG_SOURCE" "."
     check_sha256 "$PKG_SOURCE" "$PKG_HASH"
     if $MINIDLNA_THUMBNAILS_ENABLED; then
         unpack_archive_and_patch "$PKG_SOURCE" "$FOLDER" "${SCRIPT_DIR}/patches/${PKG_NAME}/${FOLDER}"

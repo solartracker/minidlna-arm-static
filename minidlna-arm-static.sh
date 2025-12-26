@@ -107,7 +107,7 @@ download() {
 
     if [ ! -f "$target_path" ]; then
         if [ -f "$cached_path" ]; then
-            ln -s "$cached_path" "$target_path"
+            ln -sfn "$cached_path" "$target_path"
         fi
     fi
 

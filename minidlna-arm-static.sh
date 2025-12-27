@@ -137,16 +137,25 @@ download() (
     local cached_path="$CACHED_DIR/$source"
     local target_path="$target_dir/$source"
     local temp_path=""
+    local rc=0
 
     if [ ! -f "$cached_path" ]; then
         mkdir -p "$CACHED_DIR"
         if [ ! -f "$target_path" ]; then
             temp_path=$(mktemp "$cached_path.XXXXXX")
             trap 'rm -f "$temp_path" "$cached_path"' EXIT INT TERM
-            retry 100 wget_clean "$temp_path" "$source_url" "$cached_path"
+            if ! retry 100 wget_clean "$temp_path" "$source_url" "$cached_path"; then
+                rc=$?
+                trap - EXIT INT TERM
+                return $rc
+            fi
             trap - EXIT INT TERM
         else
-            mv -f "$target_path" "$cached_path"
+            if ! mv -f "$target_path" "$cached_path"; then
+                rc=$?
+                rm -f "$cached_path"
+                return $rc
+            fi
         fi
     fi
 

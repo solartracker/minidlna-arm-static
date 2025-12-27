@@ -122,8 +122,7 @@ wget_clean() {
     return 0
 }
 
-download() (
-# BEGIN sub-shell
+download() ( # BEGIN sub-shell
     [ -n "$1" ]          || return 1
     [ -n "$2" ]          || return 1
     [ -n "$3" ]          || return 1
@@ -167,8 +166,7 @@ download() (
     fi
 
     return 0
-# END sub-shell
-)
+) # END sub-shell
 
 ################################################################################
 # Install the build environment

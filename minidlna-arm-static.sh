@@ -40,6 +40,10 @@ CACHED_DIR="${PARENT_DIR}/tomatoware-sources"
 set -e
 set -x
 
+# new files:       rw-r--r-- (644)
+# new directories: rwxr-xr-x (755)
+umask 022
+
 ################################################################################
 # Helpers
 
@@ -79,7 +83,49 @@ handle_configure_error() {
     return $rc
 }
 
-download() {
+retry() {
+    local max=$1
+    shift
+    local i=1
+    while :; do
+        if ! "$@"; then
+            if [ "$i" -ge "$max" ]; then
+                return 1
+            fi
+            i=$((i + 1))
+            sleep 10
+        else
+            return 0
+        fi
+    done
+}
+
+wget_clean() {
+    [ -n "$1" ]          || return 1
+    [ -n "$2" ]          || return 1
+    [ -n "$3" ]          || return 1
+
+    local temp_path="$1"
+    local source_url="$2"
+    local target_path="$3"
+    local rc=0
+
+    rm -f "$temp_path"
+    if ! wget -O "$temp_path" --tries=9 --retry-connrefused --waitretry=5 "$source_url"; then
+        rc=$?
+        rm -f "$temp_path"
+    else
+        if ! mv -f "$temp_path" "$target_path"; then
+            rc=$?
+            rm -f "$temp_path" "$target_path"
+        fi
+    fi
+
+    return $rc
+}
+
+download() (
+# BEGIN sub-shell
     [ -n "$1" ]          || return 1
     [ -n "$2" ]          || return 1
     [ -n "$3" ]          || return 1
@@ -96,10 +142,9 @@ download() {
         mkdir -p "$CACHED_DIR"
         if [ ! -f "$target_path" ]; then
             temp_path=$(mktemp "$cached_path.XXXXXX")
-            trap 'rm -f "$temp_path"' EXIT INT TERM
-            wget -O "$temp_path" "$source_url"
+            trap 'rm -f "$temp_path" "$cached_path"' EXIT INT TERM
+            retry 100 wget_clean "$temp_path" "$source_url" "$cached_path"
             trap - EXIT INT TERM
-            mv -f "$temp_path" "$cached_path"
         else
             mv -f "$target_path" "$cached_path"
         fi
@@ -112,7 +157,8 @@ download() {
     fi
 
     return 0
-}
+# END sub-shell
+)
 
 ################################################################################
 # Install the build environment

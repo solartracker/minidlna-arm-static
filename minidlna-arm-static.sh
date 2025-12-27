@@ -47,6 +47,17 @@ umask 022
 ################################################################################
 # Helpers
 
+# If autoconf/configure fails due to missing libraries or undefined symbols, you
+# immediately see all undefined references without having to manually search config.log
+handle_configure_error() {
+    #grep -R --include="config.log" --color=always "undefined reference" .
+    find . -name "config.log" -exec grep -H "undefined reference" {} \;
+    return 1
+}
+
+################################################################################
+# Package management
+
 # Checksum verification for downloaded file
 check_sha256() {
     [ -n "$1" ] || return 1
@@ -72,14 +83,6 @@ check_sha256() {
 
     echo "SHA256 OK: $file"
     return 0
-}
-
-# If autoconf/configure fails due to missing libraries or undefined symbols, you
-# immediately see all undefined references without having to manually search config.log
-handle_configure_error() {
-    #grep -R --include="config.log" --color=always "undefined reference" .
-    find . -name "config.log" -exec grep -H "undefined reference" {} \;
-    return 1
 }
 
 retry() {
@@ -167,90 +170,6 @@ download() ( # BEGIN sub-shell
 
     return 0
 ) # END sub-shell
-
-################################################################################
-# Install the build environment
-
-TOMATOWARE_PKG_SOURCE_URL="https://github.com/lancethepants/tomatoware/releases/download/v5.0/arm-soft-mmc.tgz"
-TOMATOWARE_PKG_HASH="ff490819a16f5ddb80ec095342ac005a444b6ebcd3ed982b8879134b2b036fcc"
-TOMATOWARE_PKG="arm-soft-mmc-5.0.tgz"
-TOMATOWARE_DIR="tomatoware-5.0"
-TOMATOWARE_PATH="${PARENT_DIR}/${TOMATOWARE_DIR}"
-TOMATOWARE_SYSROOT="/mmc" # or, whatever your tomatoware distribution uses for sysroot
-
-# Check if Tomatoware exists and install it, if needed
-if [ ! -d "$TOMATOWARE_PATH" ]; then
-    echo "Tomatoware not found at $TOMATOWARE_PATH. Installing..."
-    echo ""
-    cd $PARENT_DIR
-    TOMATOWARE_PKG_PATH="$CACHED_DIR/$TOMATOWARE_PKG"
-    download "$TOMATOWARE_PKG_SOURCE_URL" "$TOMATOWARE_PKG" "$CACHED_DIR"
-    check_sha256 "$TOMATOWARE_PKG_PATH" "$TOMATOWARE_PKG_HASH"
-
-    DIR_TMP=$(mktemp -d "$TOMATOWARE_DIR.XXXXXX")
-    cleanup() { rm -f "$DIR_TMP"; }
-    trap 'cleanup; exit 130' INT
-    trap 'cleanup; exit 143' TERM
-    trap 'cleanup' EXIT
-    mkdir -p "$DIR_TMP"
-    tar xzvf "$TOMATOWARE_PKG_PATH" -C "$DIR_TMP"
-    mv -f "$DIR_TMP" "$TOMATOWARE_DIR"
-    trap - EXIT INT TERM
-fi
-
-# Check if /mmc exists and is a symbolic link
-if [ ! -L "$TOMATOWARE_SYSROOT" ] && ! grep -q " $TOMATOWARE_SYSROOT " /proc/mounts; then
-    echo "Tomatoware $TOMATOWARE_SYSROOT is missing or is not a symbolic link."
-    echo ""
-    # try making a symlink
-    if ! sudo ln -sfn "$TOMATOWARE_PATH" "$TOMATOWARE_SYSROOT"; then
-        # otherwise, we are probably on a read-only filesystem and
-        # the sysroot needs to be already baked into the firmware and
-        # not in use by something else.
-        # alternatively, you can figure out another sysroot to use.
-        mount -o bind "$TOMATOWARE_PATH" "$TOMATOWARE_SYSROOT"
-    fi
-fi
-
-# Check for required Tomatoware tools
-if [ ! -x "$TOMATOWARE_SYSROOT/bin/gcc" ] || [ ! -x "$TOMATOWARE_SYSROOT/bin/make" ]; then
-    echo "ERROR: Tomatoware installation appears incomplete."
-    echo "Missing gcc or make in $TOMATOWARE_SYSROOT/bin."
-    echo ""
-    exit 1
-fi
-
-# Check shell
-if [ "$BASH" != "$TOMATOWARE_SYSROOT/bin/bash" ]; then
-    if [ -z "$TOMATOWARE_SHELL" ]; then
-        export TOMATOWARE_SHELL=1
-        exec "$TOMATOWARE_SYSROOT/bin/bash" "$PATH_CMD" "$@"
-    else
-        echo "ERROR: Not Tomatoware shell: $(readlink /proc/$$/exe)"
-        echo ""
-        exit 1
-    fi
-fi
-
-# ---- From here down, you are running under /mmc/bin/bash ----
-echo "Now running under: $(readlink /proc/$$/exe)"
-
-################################################################################
-# General
-
-PKG_ROOT=minidlna
-REBUILD_ALL=false
-MINIDLNA_THUMBNAILS_ENABLED=true # enabling increases file size by about 2MB
-SRC="$TOMATOWARE_SYSROOT/src/$PKG_ROOT"
-mkdir -p "$SRC"
-MAKE="make -j$(grep -c ^processor /proc/cpuinfo)" # parallelism
-#MAKE="make -j1"                                  # one job at a time
-export PATH="$TOMATOWARE_SYSROOT/usr/bin:$TOMATOWARE_SYSROOT/usr/local/sbin:$TOMATOWARE_SYSROOT/usr/local/bin:$TOMATOWARE_SYSROOT/usr/sbin:$TOMATOWARE_SYSROOT/sbin:$TOMATOWARE_SYSROOT/bin"
-export PKG_CONFIG_PATH="$TOMATOWARE_SYSROOT/lib/pkgconfig"
-#export PKG_CONFIG="pkg-config --static"
-
-################################################################################
-# Package management
 
 apply_patch() {
     [ -n "$1" ] || return 1
@@ -379,6 +298,88 @@ update_patch_library() {
 }
 #update_patch_library
 
+
+################################################################################
+# Install the build environment
+
+TOMATOWARE_PKG_SOURCE_URL="https://github.com/lancethepants/tomatoware/releases/download/v5.0/arm-soft-mmc.tgz"
+TOMATOWARE_PKG_HASH="ff490819a16f5ddb80ec095342ac005a444b6ebcd3ed982b8879134b2b036fcc"
+TOMATOWARE_PKG="arm-soft-mmc-5.0.tgz"
+TOMATOWARE_DIR="tomatoware-5.0"
+TOMATOWARE_PATH="${PARENT_DIR}/${TOMATOWARE_DIR}"
+TOMATOWARE_SYSROOT="/mmc" # or, whatever your tomatoware distribution uses for sysroot
+
+# Check if Tomatoware exists and install it, if needed
+if [ ! -d "$TOMATOWARE_PATH" ]; then
+    echo "Tomatoware not found at $TOMATOWARE_PATH. Installing..."
+    echo ""
+    cd $PARENT_DIR
+    TOMATOWARE_PKG_PATH="$CACHED_DIR/$TOMATOWARE_PKG"
+    download "$TOMATOWARE_PKG_SOURCE_URL" "$TOMATOWARE_PKG" "$CACHED_DIR"
+    check_sha256 "$TOMATOWARE_PKG_PATH" "$TOMATOWARE_PKG_HASH"
+
+    DIR_TMP=$(mktemp -d "$TOMATOWARE_DIR.XXXXXX")
+    cleanup() { rm -f "$DIR_TMP"; }
+    trap 'cleanup; exit 130' INT
+    trap 'cleanup; exit 143' TERM
+    trap 'cleanup' EXIT
+    mkdir -p "$DIR_TMP"
+    tar xzvf "$TOMATOWARE_PKG_PATH" -C "$DIR_TMP"
+    mv -f "$DIR_TMP" "$TOMATOWARE_DIR"
+    trap - EXIT INT TERM
+fi
+
+# Check if /mmc exists and is a symbolic link
+if [ ! -L "$TOMATOWARE_SYSROOT" ] && ! grep -q " $TOMATOWARE_SYSROOT " /proc/mounts; then
+    echo "Tomatoware $TOMATOWARE_SYSROOT is missing or is not a symbolic link."
+    echo ""
+    # try making a symlink
+    if ! sudo ln -sfn "$TOMATOWARE_PATH" "$TOMATOWARE_SYSROOT"; then
+        # otherwise, we are probably on a read-only filesystem and
+        # the sysroot needs to be already baked into the firmware and
+        # not in use by something else.
+        # alternatively, you can figure out another sysroot to use.
+        mount -o bind "$TOMATOWARE_PATH" "$TOMATOWARE_SYSROOT"
+    fi
+fi
+
+# Check for required Tomatoware tools
+if [ ! -x "$TOMATOWARE_SYSROOT/bin/gcc" ] || [ ! -x "$TOMATOWARE_SYSROOT/bin/make" ]; then
+    echo "ERROR: Tomatoware installation appears incomplete."
+    echo "Missing gcc or make in $TOMATOWARE_SYSROOT/bin."
+    echo ""
+    exit 1
+fi
+
+# Check shell
+if [ "$BASH" != "$TOMATOWARE_SYSROOT/bin/bash" ]; then
+    if [ -z "$TOMATOWARE_SHELL" ]; then
+        export TOMATOWARE_SHELL=1
+        exec "$TOMATOWARE_SYSROOT/bin/bash" "$PATH_CMD" "$@"
+    else
+        echo "ERROR: Not Tomatoware shell: $(readlink /proc/$$/exe)"
+        echo ""
+        exit 1
+    fi
+fi
+
+# ---- From here down, you are running under /mmc/bin/bash ----
+echo "Now running under: $(readlink /proc/$$/exe)"
+
+################################################################################
+# General
+
+PKG_ROOT=minidlna
+REBUILD_ALL=false
+MINIDLNA_THUMBNAILS_ENABLED=true # enabling increases file size by about 2MB
+SRC="$TOMATOWARE_SYSROOT/src/$PKG_ROOT"
+mkdir -p "$SRC"
+MAKE="make -j$(grep -c ^processor /proc/cpuinfo)" # parallelism
+#MAKE="make -j1"                                  # one job at a time
+export PATH="$TOMATOWARE_SYSROOT/usr/bin:$TOMATOWARE_SYSROOT/usr/local/sbin:$TOMATOWARE_SYSROOT/usr/local/bin:$TOMATOWARE_SYSROOT/usr/sbin:$TOMATOWARE_SYSROOT/sbin:$TOMATOWARE_SYSROOT/bin"
+export PKG_CONFIG_PATH="$TOMATOWARE_SYSROOT/lib/pkgconfig"
+#export PKG_CONFIG="pkg-config --static"
+
 ################################################################################
 # libogg-1.3.6
 
@@ -394,9 +395,9 @@ mkdir -p "${SRC}/${PKG_NAME}" && cd "${SRC}/${PKG_NAME}"
 if $REBUILD_ALL; then
     if [ -f "$FOLDER/Makefile" ]; then
         cd "$FOLDER" && make uninstall && cd ..
-    fi || true
+    fi
     rm -rf "$FOLDER"
-fi || true
+fi
 
 if [ ! -f "$FOLDER/__package_installed" ]; then
     download "$PKG_SOURCE_URL" "$PKG_SOURCE" "."
@@ -431,9 +432,9 @@ mkdir -p "${SRC}/${PKG_NAME}" && cd "${SRC}/${PKG_NAME}"
 if $REBUILD_ALL; then
     if [ -f "$FOLDER/Makefile" ]; then
         cd "$FOLDER" && make uninstall && cd ..
-    fi || true
+    fi
     rm -rf "$FOLDER"
-fi || true
+fi
 
 if [ ! -f "$FOLDER/__package_installed" ]; then
     download "$PKG_SOURCE_URL" "$PKG_SOURCE" "."
@@ -469,9 +470,9 @@ mkdir -p "${SRC}/${PKG_NAME}" && cd "${SRC}/${PKG_NAME}"
 if $REBUILD_ALL; then
     if [ -f "$FOLDER/Makefile" ]; then
         cd "$FOLDER" && make uninstall && cd ..
-    fi || true
+    fi
     rm -rf "$FOLDER"
-fi || true
+fi
 
 if [ ! -f "$FOLDER/__package_installed" ]; then
     download "$PKG_SOURCE_URL" "$PKG_SOURCE" "."
@@ -511,12 +512,12 @@ PKG_HASH="63da4f6e7997278f8a3fef4c6a372d342f705051d1eeb6a46a86b03610e26151"
 FOLDER="${PKG_NAME}-${PKG_VERSION}"
 mkdir -p "${SRC}/${PKG_NAME}" && cd "${SRC}/${PKG_NAME}"
 
-if [ $REBUILD_ALL; then
+if $REBUILD_ALL; then
     if [ -f "$FOLDER/Makefile" ]; then
         cd "$FOLDER" && make uninstall && cd ..
-    fi || true
+    fi
     rm -rf "$FOLDER"
-fi || true
+fi
 
 if [ ! -f "$FOLDER/__package_installed" ]; then
     download "$PKG_SOURCE_URL" "$PKG_SOURCE" "."
@@ -555,9 +556,9 @@ mkdir -p "${SRC}/${PKG_NAME}" && cd "${SRC}/${PKG_NAME}"
 if $REBUILD_ALL; then
     if [ -f "$FOLDER/Makefile" ]; then
         cd "$FOLDER" && make uninstall && cd ..
-    fi || true
+    fi
     rm -rf "$FOLDER"
-fi || true
+fi
 
 if [ ! -f "$FOLDER/__package_installed" ]; then
     download "$PKG_SOURCE_URL" "$PKG_SOURCE" "."
@@ -597,9 +598,9 @@ mkdir -p "${SRC}/${PKG_NAME}" && cd "${SRC}/${PKG_NAME}"
 if $REBUILD_ALL; then
     if [ -f "$FOLDER/Makefile" ]; then
         cd "$FOLDER" && make uninstall && cd ..
-    fi || true
+    fi
     rm -rf "$FOLDER"
-fi || true
+fi
 
 if [ ! -f "$FOLDER/__package_installed" ]; then
     download "$PKG_SOURCE_URL" "$PKG_SOURCE" "."
@@ -636,9 +637,9 @@ mkdir -p "${SRC}/${PKG_NAME}" && cd "${SRC}/${PKG_NAME}"
 if $REBUILD_ALL; then
     if [ -f "$FOLDER/Makefile" ]; then
         cd "$FOLDER" && make uninstall && cd ..
-    fi || true
+    fi
     rm -rf "$FOLDER"
-fi || true
+fi
 
 if [ ! -f "$FOLDER/__package_installed" ]; then
     download "$PKG_SOURCE_URL" "$PKG_SOURCE" "."
@@ -694,9 +695,9 @@ ffmpeg_enable() {
 if $REBUILD_ALL; then
     if [ -f "$FOLDER/Makefile" ]; then
         cd "$FOLDER" && make uninstall && cd ..
-    fi || true
+    fi
     rm -rf "$FOLDER"
-fi || true
+fi
 
 if [ ! -f "$FOLDER/__package_installed" ]; then
     download "$PKG_SOURCE_URL" "$PKG_SOURCE" "."
@@ -752,9 +753,9 @@ mkdir -p "${SRC}/${PKG_NAME}" && cd "${SRC}/${PKG_NAME}"
 if $REBUILD_ALL; then
     if [ -f "$FOLDER/build/Makefile" ]; then
         cd "$FOLDER/build" && make uninstall && cd ../..
-    fi || true
+    fi
     rm -rf "$FOLDER"
-fi || true
+fi
 
 if [ ! -f "$FOLDER/__package_installed" ]; then
     download "$PKG_SOURCE_URL" "$PKG_SOURCE" "."
@@ -806,9 +807,9 @@ mkdir -p "${SRC}/${PKG_NAME}" && cd "${SRC}/${PKG_NAME}"
 if $REBUILD_ALL; then
     if [ -f "$FOLDER/Makefile" ]; then
         cd "$FOLDER" && make uninstall && cd ..
-    fi || true
+    fi
     rm -rf "$FOLDER"
-fi || true
+fi
 
 if [ ! -f "$FOLDER/__package_installed" ]; then
     download "$PKG_SOURCE_URL" "$PKG_SOURCE" "."

@@ -77,10 +77,9 @@ check_sha256() {
 # If autoconf/configure fails due to missing libraries or undefined symbols, you
 # immediately see all undefined references without having to manually search config.log
 handle_configure_error() {
-    local rc=$1
     #grep -R --include="config.log" --color=always "undefined reference" .
     find . -name "config.log" -exec grep -H "undefined reference" {} \;
-    return $rc
+    return 1
 }
 
 retry() {
@@ -108,20 +107,19 @@ wget_clean() {
     local temp_path="$1"
     local source_url="$2"
     local target_path="$3"
-    local rc=0
 
     rm -f "$temp_path"
     if ! wget -O "$temp_path" --tries=9 --retry-connrefused --waitretry=5 "$source_url"; then
-        rc=$?
         rm -f "$temp_path"
+        return 1
     else
         if ! mv -f "$temp_path" "$target_path"; then
-            rc=$?
             rm -f "$temp_path" "$target_path"
+            return 1
         fi
     fi
 
-    return $rc
+    return 0
 }
 
 download() (
@@ -137,25 +135,28 @@ download() (
     local cached_path="$CACHED_DIR/$source"
     local target_path="$target_dir/$source"
     local temp_path=""
-    local rc=0
 
     if [ ! -f "$cached_path" ]; then
         mkdir -p "$CACHED_DIR"
         if [ ! -f "$target_path" ]; then
+            cleanup() { rm -f "$cached_path" "$temp_path"; }
+            trap 'cleanup; exit 130' INT
+            trap 'cleanup; exit 143' TERM
+            trap 'cleanup' EXIT
             temp_path=$(mktemp "$cached_path.XXXXXX")
-            trap 'rm -f "$temp_path" "$cached_path"' EXIT INT TERM
             if ! retry 100 wget_clean "$temp_path" "$source_url" "$cached_path"; then
-                rc=$?
-                trap - EXIT INT TERM
-                return $rc
+                return 1
             fi
             trap - EXIT INT TERM
         else
+            cleanup() { rm -f "$cached_path"; }
+            trap 'cleanup; exit 130' INT
+            trap 'cleanup; exit 143' TERM
+            trap 'cleanup' EXIT
             if ! mv -f "$target_path" "$cached_path"; then
-                rc=$?
-                rm -f "$cached_path"
-                return $rc
+                return 1
             fi
+            trap - EXIT INT TERM
         fi
     fi
 
@@ -189,7 +190,10 @@ if [ ! -d "$TOMATOWARE_PATH" ]; then
     check_sha256 "$TOMATOWARE_PKG_PATH" "$TOMATOWARE_PKG_HASH"
 
     DIR_TMP=$(mktemp -d "$TOMATOWARE_DIR.XXXXXX")
-    trap '[ -n "$DIR_TMP" ] && rm -rf "$DIR_TMP"' EXIT INT TERM
+    cleanup() { rm -f "$DIR_TMP"; }
+    trap 'cleanup; exit 130' INT
+    trap 'cleanup; exit 143' TERM
+    trap 'cleanup' EXIT
     mkdir -p "$DIR_TMP"
     tar xzvf "$TOMATOWARE_PKG_PATH" -C "$DIR_TMP"
     mv -f "$DIR_TMP" "$TOMATOWARE_DIR"
@@ -284,21 +288,18 @@ apply_patches_all() {
     local source_dir="$2"
     local patch_file=""
     local rc=0
-    local rc_error=0
 
     if [ -d "$patch_dir" ]; then
         for patch_file in $patch_dir/*.patch; do
             if [ -f "$patch_file" ]; then
-                apply_patch "$patch_file" "$source_dir"
-                rc=$?
-                if [ $rc != 0 ]; then
-                    rc_error=$rc
+                if ! apply_patch "$patch_file" "$source_dir"; then
+                    rc=1
                 fi
             fi
         done
     fi
 
-    return $rc_error
+    return $rc
 }
 
 unpack_archive() {

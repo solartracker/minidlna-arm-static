@@ -405,7 +405,7 @@ echo "Now running under: $(readlink /proc/$$/exe)"
 
 PKG_ROOT=minidlna
 REBUILD_ALL=false
-MINIDLNA_THUMBNAILS_ENABLED=false # enabling increases file size by about 2MB
+MINIDLNA_THUMBNAILS_ENABLED=true # enabling increases file size by about 2MB
 SRC="$TOMATOWARE_SYSROOT/src/$PKG_ROOT"
 mkdir -p "$SRC"
 MAKE="make -j$(grep -c ^processor /proc/cpuinfo)" # parallelism
@@ -851,7 +851,7 @@ if [ ! -f "$FOLDER/__package_installed" ]; then
     unpack_archive "$PKG_SOURCE" "$FOLDER"
     if $MINIDLNA_THUMBNAILS_ENABLED; then
         apply_patches "${SCRIPT_DIR}/patches/${PKG_NAME}/${FOLDER}/entware" "$FOLDER"
-        apply_patches "${SCRIPT_DIR}/patches/${PKG_NAME}/${FOLDER}/solartracker-entware" "$FOLDER"
+        apply_patches "${SCRIPT_DIR}/patches/${PKG_NAME}/${FOLDER}/entware/solartracker" "$FOLDER"
     else
         apply_patches "${SCRIPT_DIR}/patches/${PKG_NAME}/${FOLDER}/solartracker" "$FOLDER"
     fi

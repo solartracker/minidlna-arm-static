@@ -421,23 +421,23 @@ PKG_NAME=libogg
 PKG_VERSION=1.3.6
 PKG_SOURCE="${PKG_NAME}-${PKG_VERSION}.tar.gz"
 PKG_SOURCE_URL="https://ftp.osuosl.org/pub/xiph/releases/ogg/${PKG_SOURCE}"
+PKG_SOURCE_SUBDIR="${PKG_NAME}-${PKG_VERSION}"
 PKG_HASH="83e6704730683d004d20e21b8f7f55dcb3383cdf84c0daedf30bde175f774638"
 
-FOLDER="${PKG_NAME}-${PKG_VERSION}"
 mkdir -p "${SRC}/${PKG_NAME}" && cd "${SRC}/${PKG_NAME}"
 
 if $REBUILD_ALL; then
-    if [ -f "$FOLDER/Makefile" ]; then
-        cd "$FOLDER" && make uninstall && cd ..
+    if [ -f "$PKG_SOURCE_SUBDIR/Makefile" ]; then
+        cd "$PKG_SOURCE_SUBDIR" && make uninstall && cd ..
     fi
-    rm -rf "$FOLDER"
+    rm -rf "$PKG_SOURCE_SUBDIR"
 fi
 
-if [ ! -f "$FOLDER/__package_installed" ]; then
+if [ ! -f "$PKG_SOURCE_SUBDIR/__package_installed" ]; then
     download "$PKG_SOURCE_URL" "$PKG_SOURCE" "."
     verify_hash "$PKG_SOURCE" "$PKG_HASH"
-    unpack_archive "$PKG_SOURCE" "$FOLDER"
-    cd "$FOLDER"
+    unpack_archive "$PKG_SOURCE" "$PKG_SOURCE_SUBDIR"
+    cd "$PKG_SOURCE_SUBDIR"
 
     ./configure \
         --enable-static \
@@ -458,23 +458,23 @@ PKG_NAME=libvorbis
 PKG_VERSION=1.3.7
 PKG_SOURCE="${PKG_NAME}-${PKG_VERSION}.tar.gz"
 PKG_SOURCE_URL="https://ftp.osuosl.org/pub/xiph/releases/vorbis/${PKG_SOURCE}"
+PKG_SOURCE_SUBDIR="${PKG_NAME}-${PKG_VERSION}"
 PKG_HASH="0e982409a9c3fc82ee06e08205b1355e5c6aa4c36bca58146ef399621b0ce5ab"
 
-FOLDER="${PKG_NAME}-${PKG_VERSION}"
 mkdir -p "${SRC}/${PKG_NAME}" && cd "${SRC}/${PKG_NAME}"
 
 if $REBUILD_ALL; then
-    if [ -f "$FOLDER/Makefile" ]; then
-        cd "$FOLDER" && make uninstall && cd ..
+    if [ -f "$PKG_SOURCE_SUBDIR/Makefile" ]; then
+        cd "$PKG_SOURCE_SUBDIR" && make uninstall && cd ..
     fi
-    rm -rf "$FOLDER"
+    rm -rf "$PKG_SOURCE_SUBDIR"
 fi
 
-if [ ! -f "$FOLDER/__package_installed" ]; then
+if [ ! -f "$PKG_SOURCE_SUBDIR/__package_installed" ]; then
     download "$PKG_SOURCE_URL" "$PKG_SOURCE" "."
     verify_hash "$PKG_SOURCE" "$PKG_HASH"
-    unpack_archive "$PKG_SOURCE" "$FOLDER"
-    cd "$FOLDER"
+    unpack_archive "$PKG_SOURCE" "$PKG_SOURCE_SUBDIR"
+    cd "$PKG_SOURCE_SUBDIR"
 
     ./configure \
         --enable-static \
@@ -496,23 +496,23 @@ PKG_NAME=flac
 PKG_VERSION=1.5.0
 PKG_SOURCE="${PKG_NAME}-${PKG_VERSION}.tar.xz"
 PKG_SOURCE_URL="https://ftp.osuosl.org/pub/xiph/releases/flac/${PKG_SOURCE}"
+PKG_SOURCE_SUBDIR="${PKG_NAME}-${PKG_VERSION}"
 PKG_HASH="f2c1c76592a82ffff8413ba3c4a1299b6c7ab06c734dee03fd88630485c2b920"
 
-FOLDER="${PKG_NAME}-${PKG_VERSION}"
 mkdir -p "${SRC}/${PKG_NAME}" && cd "${SRC}/${PKG_NAME}"
 
 if $REBUILD_ALL; then
-    if [ -f "$FOLDER/Makefile" ]; then
-        cd "$FOLDER" && make uninstall && cd ..
+    if [ -f "$PKG_SOURCE_SUBDIR/Makefile" ]; then
+        cd "$PKG_SOURCE_SUBDIR" && make uninstall && cd ..
     fi
-    rm -rf "$FOLDER"
+    rm -rf "$PKG_SOURCE_SUBDIR"
 fi
 
-if [ ! -f "$FOLDER/__package_installed" ]; then
+if [ ! -f "$PKG_SOURCE_SUBDIR/__package_installed" ]; then
     download "$PKG_SOURCE_URL" "$PKG_SOURCE" "."
     verify_hash "$PKG_SOURCE" "$PKG_HASH"
-    unpack_archive "$PKG_SOURCE" "$FOLDER"
-    cd "$FOLDER"
+    unpack_archive "$PKG_SOURCE" "$PKG_SOURCE_SUBDIR"
+    cd "$PKG_SOURCE_SUBDIR"
 
     ./configure \
         --enable-static \
@@ -541,23 +541,23 @@ PKG_NAME=libid3tag
 PKG_VERSION=0.15.1b
 PKG_SOURCE="${PKG_NAME}-${PKG_VERSION}.tar.gz"
 PKG_SOURCE_URL="https://downloads.sourceforge.net/project/mad/libid3tag/${PKG_VERSION}/${PKG_SOURCE}"
+PKG_SOURCE_SUBDIR="${PKG_NAME}-${PKG_VERSION}"
 PKG_HASH="63da4f6e7997278f8a3fef4c6a372d342f705051d1eeb6a46a86b03610e26151"
 
-FOLDER="${PKG_NAME}-${PKG_VERSION}"
 mkdir -p "${SRC}/${PKG_NAME}" && cd "${SRC}/${PKG_NAME}"
 
 if $REBUILD_ALL; then
-    if [ -f "$FOLDER/Makefile" ]; then
-        cd "$FOLDER" && make uninstall && cd ..
+    if [ -f "$PKG_SOURCE_SUBDIR/Makefile" ]; then
+        cd "$PKG_SOURCE_SUBDIR" && make uninstall && cd ..
     fi
-    rm -rf "$FOLDER"
+    rm -rf "$PKG_SOURCE_SUBDIR"
 fi
 
-if [ ! -f "$FOLDER/__package_installed" ]; then
+if [ ! -f "$PKG_SOURCE_SUBDIR/__package_installed" ]; then
     download "$PKG_SOURCE_URL" "$PKG_SOURCE" "."
     verify_hash "$PKG_SOURCE" "$PKG_HASH"
-    unpack_archive "$PKG_SOURCE" "$FOLDER"
-    cd "$FOLDER"
+    unpack_archive "$PKG_SOURCE" "$PKG_SOURCE_SUBDIR"
+    cd "$PKG_SOURCE_SUBDIR"
 
     ./configure \
         --enable-static \
@@ -582,23 +582,23 @@ PKG_NAME=libexif
 PKG_VERSION=0.6.25
 PKG_SOURCE="${PKG_NAME}-${PKG_VERSION}.tar.gz"
 PKG_SOURCE_URL="https://github.com/libexif/libexif/releases/download/v${PKG_VERSION}/${PKG_SOURCE}"
+PKG_SOURCE_SUBDIR="${PKG_NAME}-${PKG_VERSION}"
 PKG_HASH="16fdfa59cf9d301a9ccd5c1bc2fe05c78ee0ee2bf96e39640039e3dc0fd593cb"
 
-FOLDER="${PKG_NAME}-${PKG_VERSION}"
 mkdir -p "${SRC}/${PKG_NAME}" && cd "${SRC}/${PKG_NAME}"
 
 if $REBUILD_ALL; then
-    if [ -f "$FOLDER/Makefile" ]; then
-        cd "$FOLDER" && make uninstall && cd ..
+    if [ -f "$PKG_SOURCE_SUBDIR/Makefile" ]; then
+        cd "$PKG_SOURCE_SUBDIR" && make uninstall && cd ..
     fi
-    rm -rf "$FOLDER"
+    rm -rf "$PKG_SOURCE_SUBDIR"
 fi
 
-if [ ! -f "$FOLDER/__package_installed" ]; then
+if [ ! -f "$PKG_SOURCE_SUBDIR/__package_installed" ]; then
     download "$PKG_SOURCE_URL" "$PKG_SOURCE" "."
     verify_hash "$PKG_SOURCE" "$PKG_HASH"
-    unpack_archive "$PKG_SOURCE" "$FOLDER"
-    cd "$FOLDER"
+    unpack_archive "$PKG_SOURCE" "$PKG_SOURCE_SUBDIR"
+    cd "$PKG_SOURCE_SUBDIR"
 
     ./configure \
         --enable-static \
@@ -624,23 +624,23 @@ PKG_NAME=jpeg
 PKG_VERSION=9f
 PKG_SOURCE="${PKG_NAME}src.v${PKG_VERSION}.tar.gz"
 PKG_SOURCE_URL="https://www.ijg.org/files/$PKG_SOURCE"
+PKG_SOURCE_SUBDIR="${PKG_NAME}-${PKG_VERSION}"
 PKG_HASH="04705c110cb2469caa79fb71fba3d7bf834914706e9641a4589485c1f832565b"
 
-FOLDER="${PKG_NAME}-${PKG_VERSION}"
 mkdir -p "${SRC}/${PKG_NAME}" && cd "${SRC}/${PKG_NAME}"
 
 if $REBUILD_ALL; then
-    if [ -f "$FOLDER/Makefile" ]; then
-        cd "$FOLDER" && make uninstall && cd ..
+    if [ -f "$PKG_SOURCE_SUBDIR/Makefile" ]; then
+        cd "$PKG_SOURCE_SUBDIR" && make uninstall && cd ..
     fi
-    rm -rf "$FOLDER"
+    rm -rf "$PKG_SOURCE_SUBDIR"
 fi
 
-if [ ! -f "$FOLDER/__package_installed" ]; then
+if [ ! -f "$PKG_SOURCE_SUBDIR/__package_installed" ]; then
     download "$PKG_SOURCE_URL" "$PKG_SOURCE" "."
     verify_hash "$PKG_SOURCE" "$PKG_HASH"
-    unpack_archive "$PKG_SOURCE" "$FOLDER"
-    cd "$FOLDER"
+    unpack_archive "$PKG_SOURCE" "$PKG_SOURCE_SUBDIR"
+    cd "$PKG_SOURCE_SUBDIR"
 
     ./configure \
         --enable-static \
@@ -663,23 +663,23 @@ PKG_NAME=libpng
 PKG_VERSION=1.6.53
 PKG_SOURCE="${PKG_NAME}-${PKG_VERSION}.tar.xz"
 PKG_SOURCE_URL="https://downloads.sourceforge.net/project/libpng/libpng16/${PKG_VERSION}/${PKG_SOURCE}"
+PKG_SOURCE_SUBDIR="${PKG_NAME}-${PKG_VERSION}"
 PKG_HASH="1d3fb8ccc2932d04aa3663e22ef5ef490244370f4e568d7850165068778d98d4"
 
-FOLDER="${PKG_NAME}-${PKG_VERSION}"
 mkdir -p "${SRC}/${PKG_NAME}" && cd "${SRC}/${PKG_NAME}"
 
 if $REBUILD_ALL; then
-    if [ -f "$FOLDER/Makefile" ]; then
-        cd "$FOLDER" && make uninstall && cd ..
+    if [ -f "$PKG_SOURCE_SUBDIR/Makefile" ]; then
+        cd "$PKG_SOURCE_SUBDIR" && make uninstall && cd ..
     fi
-    rm -rf "$FOLDER"
+    rm -rf "$PKG_SOURCE_SUBDIR"
 fi
 
-if [ ! -f "$FOLDER/__package_installed" ]; then
+if [ ! -f "$PKG_SOURCE_SUBDIR/__package_installed" ]; then
     download "$PKG_SOURCE_URL" "$PKG_SOURCE" "."
     verify_hash "$PKG_SOURCE" "$PKG_HASH"
-    unpack_archive "$PKG_SOURCE" "$FOLDER"
-    cd "$FOLDER"
+    unpack_archive "$PKG_SOURCE" "$PKG_SOURCE_SUBDIR"
+    cd "$PKG_SOURCE_SUBDIR"
 
     ./configure \
         --enable-static \
@@ -704,9 +704,9 @@ PKG_NAME=ffmpeg
 PKG_VERSION=6.1.2
 PKG_SOURCE="${PKG_NAME}-${PKG_VERSION}.tar.gz"
 PKG_SOURCE_URL="https://ffmpeg.org/releases/${PKG_SOURCE}"
+PKG_SOURCE_SUBDIR="${PKG_NAME}-${PKG_VERSION}"
 PKG_HASH="def310d21e40c39e6971a6bcd07fba78ca3ce39cc01ffda4dca382599dc06312"
 
-FOLDER="${PKG_NAME}-${PKG_VERSION}"
 mkdir -p "${SRC}/${PKG_NAME}" && cd "${SRC}/${PKG_NAME}"
 
 ffmpeg_options() {
@@ -727,20 +727,20 @@ ffmpeg_enable() {
 }
 
 if $REBUILD_ALL; then
-    if [ -f "$FOLDER/Makefile" ]; then
-        cd "$FOLDER" && make uninstall && cd ..
+    if [ -f "$PKG_SOURCE_SUBDIR/Makefile" ]; then
+        cd "$PKG_SOURCE_SUBDIR" && make uninstall && cd ..
     fi
-    rm -rf "$FOLDER"
+    rm -rf "$PKG_SOURCE_SUBDIR"
 fi
 
-if [ ! -f "$FOLDER/__package_installed" ]; then
+if [ ! -f "$PKG_SOURCE_SUBDIR/__package_installed" ]; then
     download "$PKG_SOURCE_URL" "$PKG_SOURCE" "."
     verify_hash "$PKG_SOURCE" "$PKG_HASH"
-    unpack_archive "$PKG_SOURCE" "$FOLDER"
+    unpack_archive "$PKG_SOURCE" "$PKG_SOURCE_SUBDIR"
     if $MINIDLNA_THUMBNAILS_ENABLED; then
-        apply_patches "${SCRIPT_DIR}/patches/${PKG_NAME}/${FOLDER}/entware" "$FOLDER"
+        apply_patches "${SCRIPT_DIR}/patches/${PKG_NAME}/${PKG_SOURCE_SUBDIR}/entware" "$PKG_SOURCE_SUBDIR"
     fi
-    cd "$FOLDER"
+    cd "$PKG_SOURCE_SUBDIR"
 
     FFMPEG_DECODERS="aac ac3 atrac3 h264 jpegls mp3 mpeg1video mpeg2video mpeg4 mpegvideo png wmav1 wmav2 svq3"
     FFMPEG_PARSERS="aac ac3 h264 mpeg4video mpegaudio mpegvideo"
@@ -778,24 +778,24 @@ PKG_NAME=ffmpegthumbnailer
 PKG_VERSION=2.2.3
 PKG_SOURCE="${PKG_NAME}-${PKG_VERSION}.tar.gz"
 PKG_SOURCE_URL="https://github.com/dirkvdb/ffmpegthumbnailer/archive/refs/tags/${PKG_VERSION}.tar.gz"
+PKG_SOURCE_SUBDIR="${PKG_NAME}-${PKG_VERSION}"
 PKG_HASH="8c9b9057c6cc8bce9d11701af224c8139c940f734c439a595525e073b09d19b8"
 
-FOLDER="${PKG_NAME}-${PKG_VERSION}"
 mkdir -p "${SRC}/${PKG_NAME}" && cd "${SRC}/${PKG_NAME}"
 
 if $REBUILD_ALL; then
-    if [ -f "$FOLDER/build/Makefile" ]; then
-        cd "$FOLDER/build" && make uninstall && cd ../..
+    if [ -f "$PKG_SOURCE_SUBDIR/build/Makefile" ]; then
+        cd "$PKG_SOURCE_SUBDIR/build" && make uninstall && cd ../..
     fi
-    rm -rf "$FOLDER"
+    rm -rf "$PKG_SOURCE_SUBDIR"
 fi
 
-if [ ! -f "$FOLDER/__package_installed" ]; then
+if [ ! -f "$PKG_SOURCE_SUBDIR/__package_installed" ]; then
     download "$PKG_SOURCE_URL" "$PKG_SOURCE" "."
     verify_hash "$PKG_SOURCE" "$PKG_HASH"
-    unpack_archive "$PKG_SOURCE" "$FOLDER"
-    apply_patches "${SCRIPT_DIR}/patches/${PKG_NAME}/${FOLDER}/solartracker" "$FOLDER"
-    cd "$FOLDER"
+    unpack_archive "$PKG_SOURCE" "$PKG_SOURCE_SUBDIR"
+    apply_patches "${SCRIPT_DIR}/patches/${PKG_NAME}/${PKG_SOURCE_SUBDIR}/solartracker" "$PKG_SOURCE_SUBDIR"
+    cd "$PKG_SOURCE_SUBDIR"
 
     rm -rf build && mkdir -p build && cd build
 
@@ -833,29 +833,29 @@ PKG_NAME=minidlna
 PKG_VERSION=1.3.3
 PKG_SOURCE="${PKG_NAME}-${PKG_VERSION}.tar.gz"
 PKG_SOURCE_URL="https://downloads.sourceforge.net/project/minidlna/minidlna/${PKG_VERSION}/${PKG_SOURCE}"
+PKG_SOURCE_SUBDIR="${PKG_NAME}-${PKG_VERSION}"
 PKG_HASH="39026c6d4a139b9180192d1c37225aa3376fdf4f1a74d7debbdbb693d996afa4"
 
-FOLDER="${PKG_NAME}-${PKG_VERSION}"
 mkdir -p "${SRC}/${PKG_NAME}" && cd "${SRC}/${PKG_NAME}"
 
 if $REBUILD_ALL; then
-    if [ -f "$FOLDER/Makefile" ]; then
-        cd "$FOLDER" && make uninstall && cd ..
+    if [ -f "$PKG_SOURCE_SUBDIR/Makefile" ]; then
+        cd "$PKG_SOURCE_SUBDIR" && make uninstall && cd ..
     fi
-    rm -rf "$FOLDER"
+    rm -rf "$PKG_SOURCE_SUBDIR"
 fi
 
-if [ ! -f "$FOLDER/__package_installed" ]; then
+if [ ! -f "$PKG_SOURCE_SUBDIR/__package_installed" ]; then
     download "$PKG_SOURCE_URL" "$PKG_SOURCE" "."
     verify_hash "$PKG_SOURCE" "$PKG_HASH"
-    unpack_archive "$PKG_SOURCE" "$FOLDER"
+    unpack_archive "$PKG_SOURCE" "$PKG_SOURCE_SUBDIR"
     if $MINIDLNA_THUMBNAILS_ENABLED; then
-        apply_patches "${SCRIPT_DIR}/patches/${PKG_NAME}/${FOLDER}/entware" "$FOLDER"
-        apply_patches "${SCRIPT_DIR}/patches/${PKG_NAME}/${FOLDER}/entware/solartracker" "$FOLDER"
+        apply_patches "${SCRIPT_DIR}/patches/${PKG_NAME}/${PKG_SOURCE_SUBDIR}/entware" "$PKG_SOURCE_SUBDIR"
+        apply_patches "${SCRIPT_DIR}/patches/${PKG_NAME}/${PKG_SOURCE_SUBDIR}/entware/solartracker" "$PKG_SOURCE_SUBDIR"
     else
-        apply_patches "${SCRIPT_DIR}/patches/${PKG_NAME}/${FOLDER}/solartracker" "$FOLDER"
+        apply_patches "${SCRIPT_DIR}/patches/${PKG_NAME}/${PKG_SOURCE_SUBDIR}/solartracker" "$PKG_SOURCE_SUBDIR"
     fi
-    cd "$FOLDER"
+    cd "$PKG_SOURCE_SUBDIR"
 
     if $MINIDLNA_THUMBNAILS_ENABLED; then
         LIBS="-lbz2 -lavfilter -ljpeg -lstdc++" \

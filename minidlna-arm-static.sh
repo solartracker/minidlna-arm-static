@@ -849,7 +849,6 @@ if [ ! -f "$FOLDER/__package_installed" ]; then
     download "$PKG_SOURCE_URL" "$PKG_SOURCE" "."
     verify_hash "$PKG_SOURCE" "$PKG_HASH"
     unpack_archive "$PKG_SOURCE" "$FOLDER"
-exit 1
     if $MINIDLNA_THUMBNAILS_ENABLED; then
         apply_patches "${SCRIPT_DIR}/patches/${PKG_NAME}/${FOLDER}/entware" "$FOLDER"
         apply_patches "${SCRIPT_DIR}/patches/${PKG_NAME}/${FOLDER}/entware/solartracker" "$FOLDER"

@@ -292,27 +292,33 @@ extract_package() {
     return 0
 }
 
-unpack_archive() {
+unpack_archive() ( # BEGIN sub-shell
     [ -n "$1" ] || return 1
     [ -n "$2" ] || return 1
 
     local source_path="$1"
     local target_dir="$2"
+    local dir_tmp=""
 
     if [ ! -d "$target_dir" ]; then
-        rm -rf temp
-        mkdir -p temp
-        if extract_package "$source_path" temp; then
-            if ! mv -f temp/* "$target_dir"; then
+        dir_tmp=$(mktemp -d "$target_dir.XXXXXX")
+        cleanup() { rm -rf "$dir_tmp"; }
+        trap 'cleanup; exit 130' INT
+        trap 'cleanup; exit 143' TERM
+        trap 'cleanup' EXIT
+        mkdir -p "$dir_tmp"
+        if extract_package "$source_path" "$dir_tmp"; then
+            # try to rename single sub-directory
+            if ! mv -f "$dir_tmp"/* "$target_dir"/; then
+                # otherwise, move multiple files and sub-directories
                 mkdir -p "$target_dir"
-                mv -f temp/* "$target_dir"
+                mv -f "$dir_tmp"/* "$target_dir"/
             fi
-            rm -rf temp
         fi
     fi
 
     return 0
-}
+) # END sub-shell
 
 update_patch_library() {
     [ -n "$PARENT_DIR" ] || return 1
@@ -351,16 +357,7 @@ if [ ! -d "$TOMATOWARE_PATH" ]; then
     TOMATOWARE_PKG_PATH="$CACHED_DIR/$TOMATOWARE_PKG"
     download "$TOMATOWARE_PKG_SOURCE_URL" "$TOMATOWARE_PKG" "$CACHED_DIR"
     verify_hash "$TOMATOWARE_PKG_PATH" "$TOMATOWARE_PKG_HASH"
-
-    DIR_TMP=$(mktemp -d "$TOMATOWARE_DIR.XXXXXX")
-    cleanup() { rm -f "$DIR_TMP"; }
-    trap 'cleanup; exit 130' INT
-    trap 'cleanup; exit 143' TERM
-    trap 'cleanup' EXIT
-    mkdir -p "$DIR_TMP"
-    tar xzvf "$TOMATOWARE_PKG_PATH" -C "$DIR_TMP"
-    mv -f "$DIR_TMP" "$TOMATOWARE_DIR"
-    trap - EXIT INT TERM
+    unpack_archive "$TOMATOWARE_PKG_PATH" "$TOMATOWARE_DIR"
 fi
 
 # Check if /mmc exists and is a symbolic link

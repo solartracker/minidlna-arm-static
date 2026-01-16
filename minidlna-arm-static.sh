@@ -65,46 +65,94 @@ handle_configure_error() {
 # new directories: rwxr-xr-x (755)
 umask 022
 
+sign_file()
+( # BEGIN sub-shell
+    [ -n "$1" ]            || return 1
+
+    local target_path="$1"
+    local sign_path="$(readlink -f "${target_path}").sign"
+    local target_file="$(basename -- "${target_path}")"
+    local target_file_hash="$(sha256sum "${target_path}" | awk '{print $1}')"
+    local temp_path=""
+    local now_localtime="$(date '+%Y-%m-%d %H:%M:%S %Z %z')"
+
+    cleanup() { rm -f "${temp_path}"; }
+    trap 'cleanup; exit 130' INT
+    trap 'cleanup; exit 143' TERM
+    trap 'cleanup' EXIT
+    temp_path=$(mktemp "${sign_path}.XXXXXX")
+    {
+        #printf '%s released %s\n' "${target_file}" "${now_localtime}"
+        #printf '\n'
+        #printf 'SHA256: %s\n' "${target_file_hash}"
+        #printf '\n'
+        printf '%s  %s\n' "${target_file_hash}" "${target_file}"
+    } >"${temp_path}" || return 1
+    touch -r "${target_path}" "${temp_path}" || return 1
+    mv -f "${temp_path}" "${sign_path}" || return 1
+    # TODO: implement signing
+    trap - EXIT INT TERM
+
+    return 0
+) # END sub-shell
+
 # Checksum verification for downloaded file
 verify_hash() {
     [ -n "$1" ] || return 1
 
-    local file="$1"
+    local file_path="$1"
     local expected="$2"
     local option="$3"
     local actual=""
+    local sign_path="$(readlink -f "${file_path}").sign"
+    local line=""
 
-    if [ ! -f "${file}" ]; then
-        echo "ERROR: File not found: ${file}"
+    if [ ! -f "${file_path}" ]; then
+        echo "ERROR: File not found: ${file_path}"
         return 1
     fi
 
     if [ -z "${option}" ]; then
         # hash the compressed binary file. this method is best when downloading
         # compressed binary files.
-        actual="$(sha256sum "${file}" | awk '{print $1}')"
+        actual="$(sha256sum "${file_path}" | awk '{print $1}')"
     elif [ "${option}" == "tar_extract" ]; then
         # hash the data, file names, directory names. this method is best when
         # archiving Github repos.
-        actual="$(tar -xJOf "${file}" | sha256sum | awk '{print $1}')"
+        actual="$(tar -xJOf "${file_path}" | sha256sum | awk '{print $1}')"
     elif [ "${option}" == "xz_extract" ]; then
         # hash the data, file names, directory names, timestamps, permissions, and
         # tar internal structures. this method is not as "future-proof" for archiving
         # Github repos because it is possible that the tar internal structures
         # could change over time as the tar implementations evolve.
-        actual="$(xz -dc "${file}" | sha256sum | awk '{print $1}')"
+        actual="$(xz -dc "${file_path}" | sha256sum | awk '{print $1}')"
     else
         return 1
     fi
 
+    if [ -z "${expected}" ]; then
+        if [ ! -f "${sign_path}" ]; then
+            echo "ERROR: Signature file not found: ${sign_path}"
+            return 1
+        else
+            # TODO: implement signature verify
+            IFS= read -r line <"${sign_path}" || return 1
+            expected=${line%%[[:space:]]*}
+            if [ -z "${expected}" ]; then
+                echo "ERROR: Bad signature file: ${sign_path}"
+                return 1
+            fi
+        fi
+    fi
+
     if [ "${actual}" != "${expected}" ]; then
-        echo "ERROR: SHA256 mismatch for ${file}"
+        echo "ERROR: SHA256 mismatch for ${file_path}"
         echo "Expected: ${expected}"
         echo "Actual:   ${actual}"
         return 1
     fi
 
-    echo "SHA256 OK: ${file}"
+    echo "SHA256 OK: ${file_path}"
     return 0
 }
 
@@ -211,6 +259,7 @@ clone_github()
     local target_dir="$5"
     local cached_path="${CACHED_DIR}/${source}"
     local target_path="${target_dir}/${source}"
+    local temp_path=""
     local temp_dir=""
     local timestamp=""
 
@@ -218,10 +267,11 @@ clone_github()
         umask 022
         mkdir -p "${CACHED_DIR}"
         if [ ! -f "${target_path}" ]; then
-            cleanup() { rm -rf "${cached_path}" "${temp_dir}"; }
+            cleanup() { rm -rf "${temp_path}" "${temp_dir}"; }
             trap 'cleanup; exit 130' INT
             trap 'cleanup; exit 143' TERM
             trap 'cleanup' EXIT
+            temp_path=$(mktemp "${cached_path}.XXXXXX")
             temp_dir=$(mktemp -d "${target_dir}/temp.XXXXXX")
             mkdir -p "${temp_dir}"
             if ! retry 100 git clone "${source_url}" "${temp_dir}/${source_subdir}"; then
@@ -238,18 +288,22 @@ clone_github()
             rm -rf .git
             cd ../..
             #chmod -R g-w,o-w "${temp_dir}/${source_subdir}"
-            tar --numeric-owner --owner=0 --group=0 --sort=name --mtime="${timestamp}" -cv -C "${temp_dir}" "${source_subdir}" | xz -zc -7e >"${cached_path}"
-            touch -d "${timestamp}" "${cached_path}"
-            rm -rf "${temp_dir}"
+            if ! tar --numeric-owner --owner=0 --group=0 --sort=name --mtime="${timestamp}" \
+                    -C "${temp_dir}" "${source_subdir}" \
+                    -cv | xz -zc -7e -T0 >"${temp_path}"; then
+                return 1
+            fi
+            touch -d "${timestamp}" "${temp_path}" || return 1
+            mv -f "${temp_path}" "${cached_path}" || return 1
+            rm -rf "${temp_dir}" || return 1
             trap - EXIT INT TERM
+            sign_file "${cached_path}"
         else
             cleanup() { rm -f "${cached_path}"; }
             trap 'cleanup; exit 130' INT
             trap 'cleanup; exit 143' TERM
             trap 'cleanup' EXIT
-            if ! mv -f "${target_path}" "${cached_path}"; then
-                return 1
-            fi
+            mv -f "${target_path}" "${cached_path}" || return 1
             trap - EXIT INT TERM
         fi
     fi
@@ -377,22 +431,22 @@ extract_package() {
 
     case "${source_path}" in
         *.tar.gz|*.tgz)
-            tar xzvf "${source_path}" -C "${target_dir}"
+            tar xzvf "${source_path}" -C "${target_dir}" || return 1
             ;;
         *.tar.bz2|*.tbz)
-            tar xjvf "${source_path}" -C "${target_dir}"
+            tar xjvf "${source_path}" -C "${target_dir}" || return 1
             ;;
         *.tar.xz|*.txz)
-            tar xJvf "${source_path}" -C "${target_dir}"
+            tar xJvf "${source_path}" -C "${target_dir}" || return 1
             ;;
         *.tar.lz|*.tlz)
-            tar xlvf "${source_path}" -C "${target_dir}"
+            tar xlvf "${source_path}" -C "${target_dir}" || return 1
             ;;
         *.tar.zst)
-            tar xvf "${source_path}" -C "${target_dir}"
+            tar xvf "${source_path}" -C "${target_dir}" || return 1
             ;;
         *.tar)
-            tar xvf "${source_path}" -C "${target_dir}"
+            tar xvf "${source_path}" -C "${target_dir}" || return 1
             ;;
         *)
             echo "Unsupported archive type: ${source_path}" >&2
@@ -413,24 +467,56 @@ unpack_archive()
     local dir_tmp=""
 
     if [ ! -d "${target_dir}" ]; then
-        dir_tmp=$(mktemp -d "${target_dir}.XXXXXX")
-        cleanup() { rm -rf "${dir_tmp}"; }
+        cleanup() { rm -rf "${dir_tmp}" "${target_dir}"; }
         trap 'cleanup; exit 130' INT
         trap 'cleanup; exit 143' TERM
         trap 'cleanup' EXIT
+        dir_tmp=$(mktemp -d "${target_dir}.XXXXXX")
         mkdir -p "${dir_tmp}"
-        if extract_package "${source_path}" "${dir_tmp}"; then
+        if ! extract_package "${source_path}" "${dir_tmp}"; then
+            return 1
+        else
             # try to rename single sub-directory
             if ! mv -f "${dir_tmp}"/* "${target_dir}"/; then
                 # otherwise, move multiple files and sub-directories
-                mkdir -p "${target_dir}"
-                mv -f "${dir_tmp}"/* "${target_dir}"/
+                mkdir -p "${target_dir}" || return 1
+                mv -f "${dir_tmp}"/* "${target_dir}"/ || return 1
             fi
         fi
+        rm -rf "${dir_tmp}" || return 1
+        trap - EXIT INT TERM
     fi
 
     return 0
 ) # END sub-shell
+
+get_latest_package() {
+    [ "$#" -eq 3 ] || return 1
+
+    local prefix=$1
+    local middle=$2
+    local suffix=$3
+    local pattern=${prefix}${middle}${suffix}
+    local latest=""
+    local version=""
+
+    (
+        cd "$CACHED_DIR" || return 1
+
+        set -- $pattern
+        [ "$1" != "$pattern" ] || return 1   # no matches
+
+        latest=$1
+        for f do
+            latest=$f
+        done
+
+        version=${latest#"$prefix"}
+        version=${version%"$suffix"}
+        printf '%s\n' "$version"
+    )
+    return 0
+}
 
 is_version_git() {
     case "$1" in
@@ -494,6 +580,7 @@ check_static() {
 }
 
 finalize_build() {
+    set +x
     echo ""
     echo "Stripping symbols and sections from files..."
     strip -v "$@"
@@ -511,6 +598,7 @@ finalize_build() {
     for bin in "$@"; do
         mv -f "${bin}" "${bin}.static"
     done
+    set -x
 
     return 0
 }

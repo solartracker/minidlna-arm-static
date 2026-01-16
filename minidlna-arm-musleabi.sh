@@ -708,12 +708,12 @@ PKG_HASH="83e6704730683d004d20e21b8f7f55dcb3383cdf84c0daedf30bde175f774638"
 mkdir -p "${SRC_ROOT}/${PKG_NAME}"
 cd "${SRC_ROOT}/${PKG_NAME}"
 
-if [ ! -f "$PKG_SOURCE_SUBDIR/__package_installed" ]; then
-    rm -rf "$PKG_SOURCE_SUBDIR"
-    download "$PKG_SOURCE_URL" "$PKG_SOURCE" "."
-    verify_hash "$PKG_SOURCE" "$PKG_HASH"
-    unpack_archive "$PKG_SOURCE" "$PKG_SOURCE_SUBDIR"
-    cd "$PKG_SOURCE_SUBDIR"
+if [ ! -f "${PKG_SOURCE_SUBDIR}/__package_installed" ]; then
+    rm -rf "${PKG_SOURCE_SUBDIR}"
+    download "${PKG_SOURCE_URL}" "${PKG_SOURCE}" "."
+    verify_hash "${PKG_SOURCE}" "${PKG_HASH}"
+    unpack_archive "${PKG_SOURCE}" "${PKG_SOURCE_SUBDIR}"
+    cd "${PKG_SOURCE_SUBDIR}"
 
     ./configure \
         --enable-static \
@@ -741,11 +741,11 @@ PKG_HASH="0e982409a9c3fc82ee06e08205b1355e5c6aa4c36bca58146ef399621b0ce5ab"
 mkdir -p "${SRC_ROOT}/${PKG_NAME}"
 cd "${SRC_ROOT}/${PKG_NAME}"
 
-if [ ! -f "$PKG_SOURCE_SUBDIR/__package_installed" ]; then
-    download "$PKG_SOURCE_URL" "$PKG_SOURCE" "."
-    verify_hash "$PKG_SOURCE" "$PKG_HASH"
-    unpack_archive "$PKG_SOURCE" "$PKG_SOURCE_SUBDIR"
-    cd "$PKG_SOURCE_SUBDIR"
+if [ ! -f "${PKG_SOURCE_SUBDIR}/__package_installed" ]; then
+    download "${PKG_SOURCE_URL}" "${PKG_SOURCE}" "."
+    verify_hash "${PKG_SOURCE}" "${PKG_HASH}"
+    unpack_archive "${PKG_SOURCE}" "${PKG_SOURCE_SUBDIR}"
+    cd "${PKG_SOURCE_SUBDIR}"
 
     ./configure \
         --enable-static \
@@ -774,12 +774,12 @@ PKG_HASH="f2c1c76592a82ffff8413ba3c4a1299b6c7ab06c734dee03fd88630485c2b920"
 mkdir -p "${SRC_ROOT}/${PKG_NAME}"
 cd "${SRC_ROOT}/${PKG_NAME}"
 
-if [ ! -f "$PKG_SOURCE_SUBDIR/__package_installed" ]; then
-    rm -rf "$PKG_SOURCE_SUBDIR"
-    download "$PKG_SOURCE_URL" "$PKG_SOURCE" "."
-    verify_hash "$PKG_SOURCE" "$PKG_HASH"
-    unpack_archive "$PKG_SOURCE" "$PKG_SOURCE_SUBDIR"
-    cd "$PKG_SOURCE_SUBDIR"
+if [ ! -f "${PKG_SOURCE_SUBDIR}/__package_installed" ]; then
+    rm -rf "${PKG_SOURCE_SUBDIR}"
+    download "${PKG_SOURCE_URL}" "${PKG_SOURCE}" "."
+    verify_hash "${PKG_SOURCE}" "${PKG_HASH}"
+    unpack_archive "${PKG_SOURCE}" "${PKG_SOURCE_SUBDIR}"
+    cd "${PKG_SOURCE_SUBDIR}"
 
     ./configure \
         --enable-static \
@@ -815,12 +815,14 @@ PKG_HASH="63da4f6e7997278f8a3fef4c6a372d342f705051d1eeb6a46a86b03610e26151"
 mkdir -p "${SRC_ROOT}/${PKG_NAME}"
 cd "${SRC_ROOT}/${PKG_NAME}"
 
-if [ ! -f "$PKG_SOURCE_SUBDIR/__package_installed" ]; then
-    rm -rf "$PKG_SOURCE_SUBDIR"
-    download "$PKG_SOURCE_URL" "$PKG_SOURCE" "."
-    verify_hash "$PKG_SOURCE" "$PKG_HASH"
-    unpack_archive "$PKG_SOURCE" "$PKG_SOURCE_SUBDIR"
-    cd "$PKG_SOURCE_SUBDIR"
+if [ ! -f "${PKG_SOURCE_SUBDIR}/__package_installed" ]; then
+    rm -rf "${PKG_SOURCE_SUBDIR}"
+    download "${PKG_SOURCE_URL}" "${PKG_SOURCE}" "."
+    verify_hash "${PKG_SOURCE}" "${PKG_HASH}"
+    unpack_archive "${PKG_SOURCE}" "${PKG_SOURCE_SUBDIR}"
+    cp -p "${SCRIPT_DIR}/files/libid3tag/libid3tag-0.15.1b/solartracker/config.guess" "${PKG_SOURCE_SUBDIR}/"
+    cp -p "${SCRIPT_DIR}/files/libid3tag/libid3tag-0.15.1b/solartracker/config.sub" "${PKG_SOURCE_SUBDIR}/"
+    cd "${PKG_SOURCE_SUBDIR}"
 
     ./configure \
         --enable-static \
@@ -852,12 +854,12 @@ PKG_HASH="16fdfa59cf9d301a9ccd5c1bc2fe05c78ee0ee2bf96e39640039e3dc0fd593cb"
 mkdir -p "${SRC_ROOT}/${PKG_NAME}"
 cd "${SRC_ROOT}/${PKG_NAME}"
 
-if [ ! -f "$PKG_SOURCE_SUBDIR/__package_installed" ]; then
-    rm -rf "$PKG_SOURCE_SUBDIR"
-    download "$PKG_SOURCE_URL" "$PKG_SOURCE" "."
-    verify_hash "$PKG_SOURCE" "$PKG_HASH"
-    unpack_archive "$PKG_SOURCE" "$PKG_SOURCE_SUBDIR"
-    cd "$PKG_SOURCE_SUBDIR"
+if [ ! -f "${PKG_SOURCE_SUBDIR}/__package_installed" ]; then
+    rm -rf "${PKG_SOURCE_SUBDIR}"
+    download "${PKG_SOURCE_URL}" "${PKG_SOURCE}" "."
+    verify_hash "${PKG_SOURCE}" "${PKG_HASH}"
+    unpack_archive "${PKG_SOURCE}" "${PKG_SOURCE_SUBDIR}"
+    cd "${PKG_SOURCE_SUBDIR}"
 
     ./configure \
         --enable-static \
@@ -883,19 +885,19 @@ fi
 PKG_NAME=jpeg
 PKG_VERSION=9f
 PKG_SOURCE="${PKG_NAME}src.v${PKG_VERSION}.tar.gz"
-PKG_SOURCE_URL="https://www.ijg.org/files/$PKG_SOURCE"
+PKG_SOURCE_URL="https://www.ijg.org/files/${PKG_SOURCE}"
 PKG_SOURCE_SUBDIR="${PKG_NAME}-${PKG_VERSION}"
 PKG_HASH="04705c110cb2469caa79fb71fba3d7bf834914706e9641a4589485c1f832565b"
 
 mkdir -p "${SRC_ROOT}/${PKG_NAME}"
 cd "${SRC_ROOT}/${PKG_NAME}"
 
-if [ ! -f "$PKG_SOURCE_SUBDIR/__package_installed" ]; then
-    rm -rf "$PKG_SOURCE_SUBDIR"
-    download "$PKG_SOURCE_URL" "$PKG_SOURCE" "."
-    verify_hash "$PKG_SOURCE" "$PKG_HASH"
-    unpack_archive "$PKG_SOURCE" "$PKG_SOURCE_SUBDIR"
-    cd "$PKG_SOURCE_SUBDIR"
+if [ ! -f "${PKG_SOURCE_SUBDIR}/__package_installed" ]; then
+    rm -rf "${PKG_SOURCE_SUBDIR}"
+    download "${PKG_SOURCE_URL}" "${PKG_SOURCE}" "."
+    verify_hash "${PKG_SOURCE}" "${PKG_HASH}"
+    unpack_archive "${PKG_SOURCE}" "${PKG_SOURCE_SUBDIR}"
+    cd "${PKG_SOURCE_SUBDIR}"
 
     ./configure \
         --enable-static \
@@ -925,12 +927,12 @@ PKG_HASH="1d3fb8ccc2932d04aa3663e22ef5ef490244370f4e568d7850165068778d98d4"
 mkdir -p "${SRC_ROOT}/${PKG_NAME}"
 cd "${SRC_ROOT}/${PKG_NAME}"
 
-if [ ! -f "$PKG_SOURCE_SUBDIR/__package_installed" ]; then
-    rm -rf "$PKG_SOURCE_SUBDIR"
-    download "$PKG_SOURCE_URL" "$PKG_SOURCE" "."
-    verify_hash "$PKG_SOURCE" "$PKG_HASH"
-    unpack_archive "$PKG_SOURCE" "$PKG_SOURCE_SUBDIR"
-    cd "$PKG_SOURCE_SUBDIR"
+if [ ! -f "${PKG_SOURCE_SUBDIR}/__package_installed" ]; then
+    rm -rf "${PKG_SOURCE_SUBDIR}"
+    download "${PKG_SOURCE_URL}" "${PKG_SOURCE}" "."
+    verify_hash "${PKG_SOURCE}" "${PKG_HASH}"
+    unpack_archive "${PKG_SOURCE}" "${PKG_SOURCE_SUBDIR}"
+    cd "${PKG_SOURCE_SUBDIR}"
 
     ./configure \
         --enable-static \
@@ -979,15 +981,15 @@ ffmpeg_enable() {
     return 0
 }
 
-if [ ! -f "$PKG_SOURCE_SUBDIR/__package_installed" ]; then
-    rm -rf "$PKG_SOURCE_SUBDIR"
-    download "$PKG_SOURCE_URL" "$PKG_SOURCE" "."
-    verify_hash "$PKG_SOURCE" "$PKG_HASH"
-    unpack_archive "$PKG_SOURCE" "$PKG_SOURCE_SUBDIR"
+if [ ! -f "${PKG_SOURCE_SUBDIR}/__package_installed" ]; then
+    rm -rf "${PKG_SOURCE_SUBDIR}"
+    download "${PKG_SOURCE_URL}" "${PKG_SOURCE}" "."
+    verify_hash "${PKG_SOURCE}" "${PKG_HASH}"
+    unpack_archive "${PKG_SOURCE}" "${PKG_SOURCE_SUBDIR}"
     if $MINIDLNA_THUMBNAILS_ENABLED; then
-        apply_patches "${SCRIPT_DIR}/patches/${PKG_NAME}/${PKG_SOURCE_SUBDIR}/entware" "$PKG_SOURCE_SUBDIR"
+        apply_patches "${SCRIPT_DIR}/patches/${PKG_NAME}/${PKG_SOURCE_SUBDIR}/entware" "${PKG_SOURCE_SUBDIR}"
     fi
-    cd "$PKG_SOURCE_SUBDIR"
+    cd "${PKG_SOURCE_SUBDIR}"
 
     FFMPEG_DECODERS="aac ac3 atrac3 h264 jpegls mp3 mpeg1video mpeg2video mpeg4 mpegvideo png wmav1 wmav2 svq3"
     FFMPEG_PARSERS="aac ac3 h264 mpeg4video mpegaudio mpegvideo"
@@ -1032,13 +1034,13 @@ PKG_HASH="8c9b9057c6cc8bce9d11701af224c8139c940f734c439a595525e073b09d19b8"
 mkdir -p "${SRC_ROOT}/${PKG_NAME}"
 cd "${SRC_ROOT}/${PKG_NAME}"
 
-if [ ! -f "$PKG_SOURCE_SUBDIR/__package_installed" ]; then
-    rm -rf "$PKG_SOURCE_SUBDIR"
-    download "$PKG_SOURCE_URL" "$PKG_SOURCE" "."
-    verify_hash "$PKG_SOURCE" "$PKG_HASH"
-    unpack_archive "$PKG_SOURCE" "$PKG_SOURCE_SUBDIR"
-    apply_patches "${SCRIPT_DIR}/patches/${PKG_NAME}/${PKG_SOURCE_SUBDIR}/solartracker" "$PKG_SOURCE_SUBDIR"
-    cd "$PKG_SOURCE_SUBDIR"
+if [ ! -f "${PKG_SOURCE_SUBDIR}/__package_installed" ]; then
+    rm -rf "${PKG_SOURCE_SUBDIR}"
+    download "${PKG_SOURCE_URL}" "${PKG_SOURCE}" "."
+    verify_hash "${PKG_SOURCE}" "${PKG_HASH}"
+    unpack_archive "${PKG_SOURCE}" "${PKG_SOURCE_SUBDIR}"
+    apply_patches "${SCRIPT_DIR}/patches/${PKG_NAME}/${PKG_SOURCE_SUBDIR}/solartracker" "${PKG_SOURCE_SUBDIR}"
+    cd "${PKG_SOURCE_SUBDIR}"
 
     rm -rf build
     mkdir -p build
@@ -1084,18 +1086,18 @@ PKG_HASH="39026c6d4a139b9180192d1c37225aa3376fdf4f1a74d7debbdbb693d996afa4"
 mkdir -p "${SRC_ROOT}/${PKG_NAME}"
 cd "${SRC_ROOT}/${PKG_NAME}"
 
-if [ ! -f "$PKG_SOURCE_SUBDIR/__package_installed" ]; then
-    rm -rf "$PKG_SOURCE_SUBDIR"
-    download "$PKG_SOURCE_URL" "$PKG_SOURCE" "."
-    verify_hash "$PKG_SOURCE" "$PKG_HASH"
-    unpack_archive "$PKG_SOURCE" "$PKG_SOURCE_SUBDIR"
+if [ ! -f "${PKG_SOURCE_SUBDIR}/__package_installed" ]; then
+    rm -rf "${PKG_SOURCE_SUBDIR}"
+    download "${PKG_SOURCE_URL}" "${PKG_SOURCE}" "."
+    verify_hash "${PKG_SOURCE}" "${PKG_HASH}"
+    unpack_archive "${PKG_SOURCE}" "${PKG_SOURCE_SUBDIR}"
     if $MINIDLNA_THUMBNAILS_ENABLED; then
-        apply_patches "${SCRIPT_DIR}/patches/${PKG_NAME}/${PKG_SOURCE_SUBDIR}/entware" "$PKG_SOURCE_SUBDIR"
-        apply_patches "${SCRIPT_DIR}/patches/${PKG_NAME}/${PKG_SOURCE_SUBDIR}/entware/solartracker" "$PKG_SOURCE_SUBDIR"
+        apply_patches "${SCRIPT_DIR}/patches/${PKG_NAME}/${PKG_SOURCE_SUBDIR}/entware" "${PKG_SOURCE_SUBDIR}"
+        apply_patches "${SCRIPT_DIR}/patches/${PKG_NAME}/${PKG_SOURCE_SUBDIR}/entware/solartracker" "${PKG_SOURCE_SUBDIR}"
     else
-        apply_patches "${SCRIPT_DIR}/patches/${PKG_NAME}/${PKG_SOURCE_SUBDIR}/solartracker" "$PKG_SOURCE_SUBDIR"
+        apply_patches "${SCRIPT_DIR}/patches/${PKG_NAME}/${PKG_SOURCE_SUBDIR}/solartracker" "${PKG_SOURCE_SUBDIR}"
     fi
-    cd "$PKG_SOURCE_SUBDIR"
+    cd "${PKG_SOURCE_SUBDIR}"
 
     if $MINIDLNA_THUMBNAILS_ENABLED; then
         LIBS="-lbz2 -lavfilter -ljpeg -lstdc++" \

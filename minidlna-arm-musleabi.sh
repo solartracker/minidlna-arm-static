@@ -696,8 +696,45 @@ unset PKG_CONFIG_PATH
 
 
 ################################################################################
-# libogg-1.3.6
+# zlib-1.3.1
+(
+PKG_NAME=zlib
+PKG_VERSION=1.3.1
+PKG_SOURCE="${PKG_NAME}-${PKG_VERSION}.tar.xz"
+PKG_SOURCE_URL="https://github.com/madler/zlib/releases/download/v${PKG_VERSION}/${PKG_SOURCE}"
+PKG_SOURCE_SUBDIR="${PKG_NAME}-${PKG_VERSION}"
+PKG_HASH="38ef96b8dfe510d42707d9c781877914792541133e1870841463bfa73f883e32"
 
+mkdir -p "${SRC_ROOT}/${PKG_NAME}"
+cd "${SRC_ROOT}/${PKG_NAME}"
+
+if [ ! -f "${PKG_SOURCE_SUBDIR}/__package_installed" ]; then
+    rm -rf "${PKG_SOURCE_SUBDIR}"
+    download_archive "${PKG_SOURCE_URL}" "${PKG_SOURCE}" "."
+    verify_hash "${PKG_SOURCE}" "${PKG_HASH}"
+    unpack_archive "${PKG_SOURCE}" "${PKG_SOURCE_SUBDIR}"
+    cd "${PKG_SOURCE_SUBDIR}"
+
+    export CC=${TARGET}-gcc
+    export AR=${TARGET}-ar
+    export RANLIB=${TARGET}-ranlib
+    export STRIP=${TARGET}-strip
+
+    ./configure \
+        --static \
+        --prefix="${PREFIX}" \
+    || handle_configure_error $?
+
+    $MAKE
+    make install
+
+    touch __package_installed
+fi
+)
+
+################################################################################
+# libogg-1.3.6
+(
 PKG_NAME=libogg
 PKG_VERSION=1.3.6
 PKG_SOURCE="${PKG_NAME}-${PKG_VERSION}.tar.gz"
@@ -727,10 +764,11 @@ if [ ! -f "${PKG_SOURCE_SUBDIR}/__package_installed" ]; then
 
     touch __package_installed
 fi
+)
 
 ################################################################################
 # libvorbis-1.3.7
-
+(
 PKG_NAME=libvorbis
 PKG_VERSION=1.3.7
 PKG_SOURCE="${PKG_NAME}-${PKG_VERSION}.tar.gz"
@@ -760,10 +798,11 @@ if [ ! -f "${PKG_SOURCE_SUBDIR}/__package_installed" ]; then
 
     touch __package_installed
 fi
+)
 
 ################################################################################
 # flac-1.5.0
-
+(
 PKG_NAME=flac
 PKG_VERSION=1.5.0
 PKG_SOURCE="${PKG_NAME}-${PKG_VERSION}.tar.xz"
@@ -801,10 +840,11 @@ if [ ! -f "${PKG_SOURCE_SUBDIR}/__package_installed" ]; then
 
     touch __package_installed
 fi
+)
 
 ################################################################################
 # libid3tag-0.15.1b
-
+(
 PKG_NAME=libid3tag
 PKG_VERSION=0.15.1b
 PKG_SOURCE="${PKG_NAME}-${PKG_VERSION}.tar.gz"
@@ -840,10 +880,11 @@ if [ ! -f "${PKG_SOURCE_SUBDIR}/__package_installed" ]; then
 
     touch __package_installed
 fi
+)
 
 ################################################################################
 # libexif-0.6.25
-
+(
 PKG_NAME=libexif
 PKG_VERSION=0.6.25
 PKG_SOURCE="${PKG_NAME}-${PKG_VERSION}.tar.gz"
@@ -878,10 +919,11 @@ if [ ! -f "${PKG_SOURCE_SUBDIR}/__package_installed" ]; then
 
     touch __package_installed
 fi
+)
 
 ################################################################################
 # jpeg-9f
-
+(
 PKG_NAME=jpeg
 PKG_VERSION=9f
 PKG_SOURCE="${PKG_NAME}src.v${PKG_VERSION}.tar.gz"
@@ -912,10 +954,11 @@ if [ ! -f "${PKG_SOURCE_SUBDIR}/__package_installed" ]; then
 
     touch __package_installed
 fi
+)
 
 ################################################################################
 # libpng-1.6.53
-
+(
 if $MINIDLNA_THUMBNAILS_ENABLED; then
 PKG_NAME=libpng
 PKG_VERSION=1.6.53
@@ -950,10 +993,11 @@ if [ ! -f "${PKG_SOURCE_SUBDIR}/__package_installed" ]; then
     touch __package_installed
 fi
 fi
+)
 
 ################################################################################
 # ffmpeg-6.1.2
-
+(
 PKG_NAME=ffmpeg
 PKG_VERSION=6.1.2
 PKG_SOURCE="${PKG_NAME}-${PKG_VERSION}.tar.gz"
@@ -1019,10 +1063,11 @@ if [ ! -f "${PKG_SOURCE_SUBDIR}/__package_installed" ]; then
 
     touch __package_installed
 fi
+)
 
 ################################################################################
 # ffmpegthumbnailer-2.2.3
-
+(
 if $MINIDLNA_THUMBNAILS_ENABLED; then
 PKG_NAME=ffmpegthumbnailer
 PKG_VERSION=2.2.3
@@ -1072,10 +1117,11 @@ if [ ! -f "${PKG_SOURCE_SUBDIR}/__package_installed" ]; then
     touch __package_installed
 fi
 fi
+)
 
 ################################################################################
 # minidlna-1.3.3
-
+(
 PKG_NAME=minidlna
 PKG_VERSION=1.3.3
 PKG_SOURCE="${PKG_NAME}-${PKG_VERSION}.tar.gz"
@@ -1129,4 +1175,5 @@ if [ ! -f "${PKG_SOURCE_SUBDIR}/__package_installed" ]; then
 
     touch __package_installed
 fi
+)
 

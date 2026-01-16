@@ -682,8 +682,8 @@ export PREFIX="${CROSSBUILD_DIR}"
 export PATH="${CROSSBUILD_DIR}/bin:${CROSSBUILD_DIR}/${TARGET}/bin:${PATH}"
 export HOST=${TARGET}
 
-STAGEDIR="${CROSSBUILD_DIR}"
-mkdir -p "${STAGEDIR}"
+#STAGEDIR="${CROSSBUILD_DIR}"
+#mkdir -p "${STAGEDIR}"
 SRC_ROOT="${CROSSBUILD_DIR}/src/${PKG_ROOT}"
 mkdir -p "${SRC_ROOT}"
 
@@ -691,7 +691,7 @@ MAKE="make -j$(grep -c ^processor /proc/cpuinfo)" # parallelism
 #MAKE="make -j1"                                  # one job at a time
 
 export PKG_CONFIG="pkg-config"
-export PKG_CONFIG_LIBDIR="${STAGEDIR}/lib/pkgconfig"
+export PKG_CONFIG_LIBDIR="${PREFIX}/lib/pkgconfig"
 unset PKG_CONFIG_PATH
 
 
@@ -863,6 +863,9 @@ if [ ! -f "${PKG_SOURCE_SUBDIR}/__package_installed" ]; then
     cp -p "${SCRIPT_DIR}/files/libid3tag/libid3tag-0.15.1b/solartracker/config.guess" "${PKG_SOURCE_SUBDIR}/"
     cp -p "${SCRIPT_DIR}/files/libid3tag/libid3tag-0.15.1b/solartracker/config.sub" "${PKG_SOURCE_SUBDIR}/"
     cd "${PKG_SOURCE_SUBDIR}"
+
+    export CPPFLAGS="-I${PREFIX}/include"
+    export LDFLAGS="-L${PREFIX}/lib"
 
     ./configure \
         --enable-static \

@@ -50,7 +50,8 @@ handle_configure_error() {
 
     #grep -R --include="config.log" --color=always "undefined reference" .
     #find . -name "config.log" -exec grep -H "undefined reference" {} \;
-    find . -name "config.log" -exec grep -H -E "undefined reference|can't load library|unrecognized command-line option|No such file or directory" {} \;
+    #find . -name "config.log" -exec grep -H -E "undefined reference|can't load library|unrecognized command-line option|No such file or directory" {} \;
+    find . -name "config.log" -exec grep -H -E "undefined reference|can't load library|unrecognized command-line option" {} \;
 
     # Force failure if rc is zero, since error was detected
     [ "${rc}" -eq 0 ] && return 1
@@ -70,11 +71,29 @@ sign_file()
     [ -n "$1" ]            || return 1
 
     local target_path="$1"
+    local option="$2"
     local sign_path="$(readlink -f "${target_path}").sign"
     local target_file="$(basename -- "${target_path}")"
-    local target_file_hash="$(sha256sum "${target_path}" | awk '{print $1}')"
+    local target_file_hash=""
     local temp_path=""
-    local now_localtime="$(date '+%Y-%m-%d %H:%M:%S %Z %z')"
+    local now_localtime=""
+
+    if [ ! -f "${target_path}" ]; then
+        echo "ERROR: File not found: ${target_path}"
+        return 1
+    fi
+
+    if [ -z "${option}" ]; then
+        target_file_hash="$(sha256sum "${target_path}" | awk '{print $1}')"
+    elif [ "${option}" == "tar_extract" ]; then
+        target_file_hash="$(tar -xJOf "${target_path}" | sha256sum | awk '{print $1}')"
+    elif [ "${option}" == "xz_extract" ]; then
+        target_file_hash="$(xz -dc "${target_path}" | sha256sum | awk '{print $1}')"
+    else
+        return 1
+    fi
+
+    now_localtime="$(date '+%Y-%m-%d %H:%M:%S %Z %z')"
 
     cleanup() { rm -f "${temp_path}"; }
     trap 'cleanup; exit 130' INT
@@ -685,7 +704,17 @@ export PREFIX="${CROSSBUILD_DIR}"
 export PATH="${CROSSBUILD_DIR}/bin:${CROSSBUILD_DIR}/${TARGET}/bin:${PATH}"
 export HOST=${TARGET}
 export SYSROOT="${PREFIX}/${TARGET}"
+
 CROSS_PREFIX=${TARGET}-
+export CC=${CROSS_PREFIX}gcc
+export AR=${CROSS_PREFIX}ar
+export RANLIB=${CROSS_PREFIX}ranlib
+export STRIP=${CROSS_PREFIX}strip
+
+export LDFLAGS="-L${PREFIX}/lib -Wl,--gc-sections"
+#export CPPFLAGS="-I${PREFIX}/include -I${PREFIX}/include/bsd -D_GNU_SOURCE"
+export CPPFLAGS="-I${PREFIX}/include -D_GNU_SOURCE"
+export CFLAGS="-O3 -march=armv7-a -mtune=cortex-a9 -fomit-frame-pointer -mabi=aapcs-linux -marm -msoft-float -mfloat-abi=soft -ffunction-sections -fdata-sections -pipe -Wall -fPIC -std=gnu99"
 
 case "${HOST_CPU}" in
     armv7l)
@@ -703,10 +732,6 @@ mkdir -p "${SRC_ROOT}"
 
 MAKE="make -j$(grep -c ^processor /proc/cpuinfo)" # parallelism
 #MAKE="make -j1"                                  # one job at a time
-
-export LDFLAGS="-L${PREFIX}/lib -Wl,--gc-sections"
-export CPPFLAGS="-I${PREFIX}/include -D_GNU_SOURCE"
-export CFLAGS="-O3 -march=armv7-a -mtune=cortex-a9 -fomit-frame-pointer -mabi=aapcs-linux -marm -msoft-float -mfloat-abi=soft -ffunction-sections -fdata-sections -pipe -Wall -fPIC -std=gnu99"
 
 export PKG_CONFIG="pkg-config"
 export PKG_CONFIG_LIBDIR="${PREFIX}/lib/pkgconfig"
@@ -732,11 +757,6 @@ if [ ! -f "${PKG_SOURCE_SUBDIR}/__package_installed" ]; then
     verify_hash "${PKG_SOURCE}" "${PKG_HASH}"
     unpack_archive "${PKG_SOURCE}" "${PKG_SOURCE_SUBDIR}"
     cd "${PKG_SOURCE_SUBDIR}"
-
-    export CC=${CROSS_PREFIX}gcc
-    export AR=${CROSS_PREFIX}ar
-    export RANLIB=${CROSS_PREFIX}ranlib
-    export STRIP=${CROSS_PREFIX}strip
 
     ./configure \
         --static \
@@ -771,10 +791,6 @@ if [ ! -f "${PKG_SOURCE_SUBDIR}/__package_installed" ]; then
     cd "${PKG_SOURCE_SUBDIR}"
 
     export CROSS_ROOT="${PREFIX}"
-    export CC=${CROSS_PREFIX}gcc
-    export AR=${CROSS_PREFIX}ar
-    export RANLIB=${CROSS_PREFIX}ranlib
-    export STRIP=${CROSS_PREFIX}strip
     export CFLAGS="${CFLAGS} --sysroot=${SYSROOT} -static"
     export LDFLAGS="${LDFLAGS} --sysroot=${SYSROOT}"
 
@@ -819,9 +835,6 @@ if [ ! -f "${PKG_SOURCE_SUBDIR}/__package_installed" ]; then
     unpack_archive "${PKG_SOURCE}" "${PKG_SOURCE_SUBDIR}"
     cd "${PKG_SOURCE_SUBDIR}"
 
-    export CC="${CROSS_PREFIX}gcc"
-    export AR="${CROSS_PREFIX}ar"
-    export RANLIB="${CROSS_PREFIX}ranlib"
     export LDFLAGS="${LDFLAGS} --sysroot=${SYSROOT}"
     export CPPFLAGS="${CPPFLAGS} --sysroot=${SYSROOT}"
 
@@ -1279,6 +1292,8 @@ if [ ! -f "${PKG_SOURCE_SUBDIR}/__package_installed" ]; then
         apply_patches "${SCRIPT_DIR}/patches/${PKG_NAME}/${PKG_SOURCE_SUBDIR}/solartracker" "${PKG_SOURCE_SUBDIR}"
     fi
     cd "${PKG_SOURCE_SUBDIR}"
+
+    cp -p "${SCRIPT_DIR}/files/${PKG_NAME}/${PKG_SOURCE_SUBDIR}/solartracker/NetBSD/src/sys/sys/queue.h" "${PREFIX}/include/sys/"
 
     if $MINIDLNA_THUMBNAILS_ENABLED; then
         LIBS="-lbz2 -lavfilter -ljpeg -lstdc++" \

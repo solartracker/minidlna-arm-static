@@ -1317,7 +1317,6 @@ if [ ! -f "${PKG_SOURCE_SUBDIR}/__package_installed" ]; then
     $MAKE
     make install
 
-
     # strip and verify there are no dependencies for static build
     finalize_build "${PREFIX}/sbin/minidlnad"
 

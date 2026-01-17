@@ -50,7 +50,7 @@ handle_configure_error() {
 
     #grep -R --include="config.log" --color=always "undefined reference" .
     #find . -name "config.log" -exec grep -H "undefined reference" {} \;
-    find . -name "config.log" -exec grep -H -E "undefined reference|can't load library|unrecognized command-line option" {} \;
+    find . -name "config.log" -exec grep -H -E "undefined reference|can't load library|unrecognized command-line option|No such file or directory" {} \;
 
     # Force failure if rc is zero, since error was detected
     [ "${rc}" -eq 0 ] && return 1
@@ -564,10 +564,10 @@ check_static() {
     for bin in "$@"; do
         echo "Checking ${bin}"
         file "${bin}" || true
-        if readelf -d "${bin}" 2>/dev/null | grep NEEDED; then
+        if ${CROSS_PREFIX}readelf -d "${bin}" 2>/dev/null | grep NEEDED; then
             rc=1
         fi || true
-        ldd "${bin}" 2>&1 || true
+        "${LDD}" "${bin}" 2>&1 || true
     done
 
     if [ ${rc} -eq 1 ]; then
@@ -583,7 +583,7 @@ finalize_build() {
     set +x
     echo ""
     echo "Stripping symbols and sections from files..."
-    strip -v "$@"
+    ${CROSS_PREFIX}strip -v "$@"
 
     # Exit here, if the programs are not statically linked.
     # If any binaries are not static, check_static() returns 1
@@ -594,9 +594,12 @@ finalize_build() {
 
     # Append ".static" to the program names
     echo ""
-    echo "Renaming programs with .static suffix..."
+    echo "Create symbolic link with .static suffix..."
     for bin in "$@"; do
-        mv -f "${bin}" "${bin}.static"
+        case "$bin" in
+            *.static) : ;;   # do nothing
+            *) ln -sfn "$(basename "${bin}")" "${bin}.static" ;;
+        esac
     done
     set -x
 
@@ -681,6 +684,17 @@ MINIDLNA_THUMBNAILS_ENABLED=true # enabling increases file size by about 2MB
 export PREFIX="${CROSSBUILD_DIR}"
 export PATH="${CROSSBUILD_DIR}/bin:${CROSSBUILD_DIR}/${TARGET}/bin:${PATH}"
 export HOST=${TARGET}
+export SYSROOT="${PREFIX}/${TARGET}"
+CROSS_PREFIX=${TARGET}-
+
+case "${HOST_CPU}" in
+    armv7l)
+        LDD="${SYSROOT}/lib/libc.so --list"
+        ;;
+    *)
+        LDD="ldd"
+        ;;
+esac
 
 #STAGEDIR="${CROSSBUILD_DIR}"
 #mkdir -p "${STAGEDIR}"
@@ -689,6 +703,10 @@ mkdir -p "${SRC_ROOT}"
 
 MAKE="make -j$(grep -c ^processor /proc/cpuinfo)" # parallelism
 #MAKE="make -j1"                                  # one job at a time
+
+export LDFLAGS="-L${PREFIX}/lib -Wl,--gc-sections"
+export CPPFLAGS="-I${PREFIX}/include -D_GNU_SOURCE"
+export CFLAGS="-O3 -march=armv7-a -mtune=cortex-a9 -fomit-frame-pointer -mabi=aapcs-linux -marm -msoft-float -mfloat-abi=soft -ffunction-sections -fdata-sections -pipe -Wall -fPIC -std=gnu99"
 
 export PKG_CONFIG="pkg-config"
 export PKG_CONFIG_LIBDIR="${PREFIX}/lib/pkgconfig"
@@ -715,14 +733,104 @@ if [ ! -f "${PKG_SOURCE_SUBDIR}/__package_installed" ]; then
     unpack_archive "${PKG_SOURCE}" "${PKG_SOURCE_SUBDIR}"
     cd "${PKG_SOURCE_SUBDIR}"
 
-    export CC=${TARGET}-gcc
-    export AR=${TARGET}-ar
-    export RANLIB=${TARGET}-ranlib
-    export STRIP=${TARGET}-strip
+    export CC=${CROSS_PREFIX}gcc
+    export AR=${CROSS_PREFIX}ar
+    export RANLIB=${CROSS_PREFIX}ranlib
+    export STRIP=${CROSS_PREFIX}strip
 
     ./configure \
         --static \
         --prefix="${PREFIX}" \
+    || handle_configure_error $?
+
+    $MAKE
+    make install
+
+    touch __package_installed
+fi
+)
+
+################################################################################
+# bzip2-1.0.8
+(
+PKG_NAME=bzip2
+PKG_VERSION=1.0.8
+PKG_SOURCE="${PKG_NAME}-${PKG_VERSION}.tar.gz"
+PKG_SOURCE_URL="https://sourceware.org/pub/${PKG_NAME}/${PKG_SOURCE}"
+PKG_SOURCE_SUBDIR="${PKG_NAME}-${PKG_VERSION}"
+PKG_HASH="ab5a03176ee106d3f0fa90e381da478ddae405918153cca248e682cd0c4a2269"
+
+mkdir -p "${SRC_ROOT}/${PKG_NAME}"
+cd "${SRC_ROOT}/${PKG_NAME}"
+
+if [ ! -f "${PKG_SOURCE_SUBDIR}/__package_installed" ]; then
+    rm -rf "${PKG_SOURCE_SUBDIR}"
+    download_archive "${PKG_SOURCE_URL}" "${PKG_SOURCE}" "."
+    verify_hash "${PKG_SOURCE}" "${PKG_HASH}"
+    unpack_archive "${PKG_SOURCE}" "${PKG_SOURCE_SUBDIR}"
+    cd "${PKG_SOURCE_SUBDIR}"
+
+    export CROSS_ROOT="${PREFIX}"
+    export CC=${CROSS_PREFIX}gcc
+    export AR=${CROSS_PREFIX}ar
+    export RANLIB=${CROSS_PREFIX}ranlib
+    export STRIP=${CROSS_PREFIX}strip
+    export CFLAGS="${CFLAGS} --sysroot=${SYSROOT} -static"
+    export LDFLAGS="${LDFLAGS} --sysroot=${SYSROOT}"
+
+    make distclean || true
+
+    $MAKE \
+        CC="$CC" \
+        AR="$AR" \
+        RANLIB="$RANLIB" \
+        CFLAGS="$CFLAGS" \
+        bzip2 bzip2recover libbz2.a
+
+    make install PREFIX="${PREFIX}"
+
+    finalize_build \
+        "${PREFIX}/bin/bzip2" \
+        "${PREFIX}/bin/bunzip2" \
+        "${PREFIX}/bin/bzcat" \
+        "${PREFIX}/bin/bzip2recover"
+
+    touch __package_installed
+fi
+)
+
+################################################################################
+# SQLite 3.51.2
+(
+PKG_NAME=sqlite-autoconf
+PKG_VERSION=3510200
+PKG_SOURCE="${PKG_NAME}-${PKG_VERSION}.tar.gz"
+PKG_SOURCE_URL="https://sqlite.org/2026/${PKG_SOURCE}"
+PKG_SOURCE_SUBDIR="${PKG_NAME}-${PKG_VERSION}"
+PKG_HASH="fbd89f866b1403bb66a143065440089dd76100f2238314d92274a082d4f2b7bb"
+
+mkdir -p "${SRC_ROOT}/${PKG_NAME}"
+cd "${SRC_ROOT}/${PKG_NAME}"
+
+if [ ! -f "${PKG_SOURCE_SUBDIR}/__package_installed" ]; then
+    rm -rf "${PKG_SOURCE_SUBDIR}"
+    download "${PKG_SOURCE_URL}" "${PKG_SOURCE}" "."
+    verify_hash "${PKG_SOURCE}" "${PKG_HASH}"
+    unpack_archive "${PKG_SOURCE}" "${PKG_SOURCE_SUBDIR}"
+    cd "${PKG_SOURCE_SUBDIR}"
+
+    export CC="${CROSS_PREFIX}gcc"
+    export AR="${CROSS_PREFIX}ar"
+    export RANLIB="${CROSS_PREFIX}ranlib"
+    export LDFLAGS="${LDFLAGS} --sysroot=${SYSROOT}"
+    export CPPFLAGS="${CPPFLAGS} --sysroot=${SYSROOT}"
+
+    ./configure \
+        --prefix="${PREFIX}" \
+        --host="${HOST}" \
+        --disable-shared \
+        --enable-static \
+        --disable-rpath \
     || handle_configure_error $?
 
     $MAKE
@@ -863,9 +971,6 @@ if [ ! -f "${PKG_SOURCE_SUBDIR}/__package_installed" ]; then
     cp -p "${SCRIPT_DIR}/files/libid3tag/libid3tag-0.15.1b/solartracker/config.guess" "${PKG_SOURCE_SUBDIR}/"
     cp -p "${SCRIPT_DIR}/files/libid3tag/libid3tag-0.15.1b/solartracker/config.sub" "${PKG_SOURCE_SUBDIR}/"
     cd "${PKG_SOURCE_SUBDIR}"
-
-    export CPPFLAGS="-I${PREFIX}/include"
-    export LDFLAGS="-L${PREFIX}/lib"
 
     ./configure \
         --enable-static \
@@ -1045,6 +1150,9 @@ if [ ! -f "${PKG_SOURCE_SUBDIR}/__package_installed" ]; then
 
     ./configure \
         --arch=arm --cpu=cortex-a9 --disable-neon --disable-vfp --target-os=linux \
+        --enable-cross-compile \
+        --cross-prefix=${TARGET}- \
+        --sysroot="${SYSROOT}" \
         --enable-static --disable-shared --disable-rpath --disable-debug --disable-doc \
         --enable-gpl --enable-version3 --enable-nonfree \
         --enable-pthreads --enable-small \
@@ -1058,7 +1166,6 @@ if [ ! -f "${PKG_SOURCE_SUBDIR}/__package_installed" ]; then
         --disable-protocols $(ffmpeg_options "--enable-protocol" "$FFMPEG_PROTOCOLS") \
         --enable-zlib \
         --prefix="${PREFIX}" \
-        --host="${HOST}" \
     || handle_configure_error $?
 
     $MAKE
@@ -1090,11 +1197,37 @@ if [ ! -f "${PKG_SOURCE_SUBDIR}/__package_installed" ]; then
     apply_patches "${SCRIPT_DIR}/patches/${PKG_NAME}/${PKG_SOURCE_SUBDIR}/solartracker" "${PKG_SOURCE_SUBDIR}"
     cd "${PKG_SOURCE_SUBDIR}"
 
+    {
+        printf '%s\n' "# toolchain.cmake"
+        printf '%s\n' "set(CMAKE_SYSTEM_NAME Linux)"
+        printf '%s\n' "set(CMAKE_SYSTEM_PROCESSOR arm)"
+        printf '%s\n' ""
+        printf '%s\n' "# Cross-compiler"
+        printf '%s\n' "set(CMAKE_C_COMPILER   \"${PREFIX}/bin/${CROSS_PREFIX}gcc\")"
+        printf '%s\n' "set(CMAKE_CXX_COMPILER \"${PREFIX}/bin/${CROSS_PREFIX}g++\")"
+        printf '%s\n' ""
+        printf '%s\n' "# Optional: sysroot"
+        printf '%s\n' "set(CMAKE_SYSROOT \"${PREFIX}\")"
+        printf '%s\n' ""
+        printf '%s\n' "# Ensure proper float ABI"
+        printf '%s\n' "set(CMAKE_C_FLAGS \"${CFLAGS}\")"
+        printf '%s\n' "set(CMAKE_CXX_FLAGS \"\${CMAKE_C_FLAGS}\")"
+        printf '%s\n' ""
+        printf '%s\n' "# Avoid picking host libraries"
+        printf '%s\n' "set(CMAKE_FIND_ROOT_PATH \"${PREFIX}\")"
+        printf '%s\n' ""
+        printf '%s\n' "# Tell CMake to search only in sysroot"
+        printf '%s\n' "set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)"
+        printf '%s\n' "set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)"
+        printf '%s\n' "set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)"
+    } >"toolchain.cmake"
+
     rm -rf build
     mkdir -p build
     cd build
 
-    cmake \
+    cmake .. \
+      -DCMAKE_TOOLCHAIN_FILE=../toolchain.cmake \
       -DCMAKE_INSTALL_PREFIX="${PREFIX}" \
       -DCMAKE_PREFIX_PATH="${PREFIX}" \
       -DENABLE_STATIC=ON \
@@ -1104,8 +1237,7 @@ if [ ! -f "${PKG_SOURCE_SUBDIR}/__package_installed" ]; then
       -DZLIB_LIBRARY="${PREFIX}/lib/libz.a" \
       -DBZIP2_LIBRARY="${PREFIX}/lib/libbz2.a" \
       -DCMAKE_VERBOSE_MAKEFILE=ON \
-      -DCMAKE_EXE_LINKER_FLAGS="-static -static-libgcc -static-libstdc++" \
-      ../
+      -DCMAKE_EXE_LINKER_FLAGS="-static -static-libgcc -static-libstdc++"
 
     $MAKE
     make install

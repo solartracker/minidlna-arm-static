@@ -1293,6 +1293,7 @@ if [ ! -f "${PKG_SOURCE_SUBDIR}/__package_installed" ]; then
     fi
     cd "${PKG_SOURCE_SUBDIR}"
 
+    mkdir -p "${PREFIX}/include/sys"
     cp -p "${SCRIPT_DIR}/files/${PKG_NAME}/${PKG_SOURCE_SUBDIR}/solartracker/NetBSD/src/sys/sys/queue.h" "${PREFIX}/include/sys/"
 
     if $MINIDLNA_THUMBNAILS_ENABLED; then

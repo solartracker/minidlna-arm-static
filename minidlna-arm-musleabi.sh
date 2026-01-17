@@ -712,9 +712,8 @@ export RANLIB=${CROSS_PREFIX}ranlib
 export STRIP=${CROSS_PREFIX}strip
 
 export LDFLAGS="-L${PREFIX}/lib -Wl,--gc-sections"
-#export CPPFLAGS="-I${PREFIX}/include -I${PREFIX}/include/bsd -D_GNU_SOURCE"
 export CPPFLAGS="-I${PREFIX}/include -D_GNU_SOURCE"
-export CFLAGS="-O3 -march=armv7-a -mtune=cortex-a9 -fomit-frame-pointer -mabi=aapcs-linux -marm -msoft-float -mfloat-abi=soft -ffunction-sections -fdata-sections -pipe -Wall -fPIC -std=gnu99"
+export CFLAGS="-O3 -march=armv7-a -mtune=cortex-a9 -marm -mfloat-abi=soft -mabi=aapcs-linux -fomit-frame-pointer -ffunction-sections -fdata-sections -pipe -Wall -fPIC -std=gnu99"
 
 case "${HOST_CPU}" in
     armv7l)
@@ -1162,10 +1161,8 @@ if [ ! -f "${PKG_SOURCE_SUBDIR}/__package_installed" ]; then
     FFMPEG_DISABLED_DEMUXERS="amr apc ape ass bethsoftvid bfi c93 daud dnxhd dsicin dxa gsm gxf idcin iff image2 image2pipe ingenient ipmovie lmlm4 mm mmf msnwc_tcp mtv mxf nsv nut oma pva rawvideo rl2 roq rpl segafilm shorten siff smacker sol str thp tiertexseq tta txd vmd voc wc3 wsaud wsvqa xa yuv4mpegpipe"
 
     ./configure \
-        --arch=arm --cpu=cortex-a9 --disable-neon --disable-vfp --target-os=linux \
-        --enable-cross-compile \
-        --cross-prefix=${TARGET}- \
-        --sysroot="${SYSROOT}" \
+        --arch=arm --target-os=linux --disable-neon --disable-vfp --disable-asm \
+        --enable-cross-compile --cross-prefix=${CROSS_PREFIX} --sysroot="${SYSROOT}" \
         --enable-static --disable-shared --disable-rpath --disable-debug --disable-doc \
         --enable-gpl --enable-version3 --enable-nonfree \
         --enable-pthreads --enable-small \

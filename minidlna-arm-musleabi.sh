@@ -789,9 +789,7 @@ if [ ! -f "${PKG_SOURCE_SUBDIR}/__package_installed" ]; then
     unpack_archive "${PKG_SOURCE}" "${PKG_SOURCE_SUBDIR}"
     cd "${PKG_SOURCE_SUBDIR}"
 
-    export CROSS_ROOT="${PREFIX}"
-    export CFLAGS="${CFLAGS} --sysroot=${SYSROOT} -static"
-    export LDFLAGS="${LDFLAGS} --sysroot=${SYSROOT}"
+    export CFLAGS="${CFLAGS} -static"
 
     make distclean || true
 
@@ -833,9 +831,6 @@ if [ ! -f "${PKG_SOURCE_SUBDIR}/__package_installed" ]; then
     verify_hash "${PKG_SOURCE}" "${PKG_HASH}"
     unpack_archive "${PKG_SOURCE}" "${PKG_SOURCE_SUBDIR}"
     cd "${PKG_SOURCE_SUBDIR}"
-
-#    export LDFLAGS="${LDFLAGS} --sysroot=${SYSROOT}"
-#    export CPPFLAGS="${CPPFLAGS} --sysroot=${SYSROOT}"
 
     ./configure \
         --prefix="${PREFIX}" \

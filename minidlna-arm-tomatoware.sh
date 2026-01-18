@@ -1,6 +1,6 @@
 #!/bin/sh
 ################################################################################
-# minidlna-arm-static.sh
+# minidlna-arm-tomatoware.sh
 #
 # Raspberry Pi build script for a statically linked version of MiniDLNA media
 # server, capable of running on any ARMv7 Linux device.

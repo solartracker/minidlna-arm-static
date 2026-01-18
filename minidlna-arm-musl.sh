@@ -1,6 +1,6 @@
 #!/bin/sh
 ################################################################################
-# minidlna-arm-musleabi.sh
+# minidlna-arm-musl.sh
 #
 # Build script for a statically linked version of MiniDLNA media
 # server, capable of running on any ARMv7 Linux device.

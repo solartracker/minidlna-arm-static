@@ -1,6 +1,8 @@
 # minidlna-arm-static
 
-This repository contains a build script (`minidlna-arm-static.sh`) for compiling **MiniDLNA** as a statically linked executable for ARMv7 Linux devices.
+This repository contains build scripts for compiling **MiniDLNA** as a **fully statically linked executable** for ARMv7 Linux devices.
+
+Two build methods are provided. Both produce functionally identical MiniDLNA binaries, but use different toolchains and build environments.
 
 ---
 
@@ -10,19 +12,47 @@ This repository contains a build script (`minidlna-arm-static.sh`) for compiling
 
 Key features:
 
-- Supports a wide range of audio and video formats.
-- Minimal system requirements; ideal for small devices like Raspberry Pi.
-- Automatically updates its media library when new content is added.
-- Can be compiled statically to include all dependencies in a single binary.
-- Focused on stability and passive operation without a heavy web interface.
+- Supports a wide range of audio and video formats
+- Minimal system requirements; ideal for small ARM devices
+- Automatically updates its media library when new content is added
+- Can be compiled statically to include all dependencies in a single binary
+- Focused on stability and passive operation without a heavy web interface
 
-MiniDLNA is perfect for home media streaming setups where simplicity, efficiency, and low resource usage are priorities.
+MiniDLNA is well suited for home media streaming setups where simplicity, efficiency, and low resource usage are priorities.
 
-This script builds a statically linked version of MiniDLNA, using Tomatoware. It runs on any ARMv7 Linux device without requiring shared libraries.
+---
+
+## Build Methods
+
+### 1. Tomatoware-Based Static Build
+
+- Build script: `minidlna-arm-tomatoware.sh`  
+- Uses the Tomatoware cross-compilation environment  
+- Produces a fully statically-linked MiniDLNA binary  
+- Intended for Tomato/Tomatoware-based systems or users already invested in that ecosystem  
+
+The resulting binary runs on ARMv7 Linux devices without requiring any shared libraries.
+
+---
+
+### 2. arm-linux-musleabi (musl) Static Build
+
+- Build script: `minidlna-arm-musl.sh`  
+- Uses a standalone `arm-linux-musleabi` cross-compiler based on musl libc  
+- Produces a fully statically-linked MiniDLNA executable  
+- Suitable for generic ARM Linux systems and embedded devices  
+
+In practice, binaries produced with the musl-based toolchain are typically **smaller and more efficient**, particularly on **older or resource-constrained ARM hardware**. This is primarily due to musl’s smaller runtime footprint and cleaner static linking behavior.
+
+Both build methods produce equivalent MiniDLNA functionality; the difference lies in toolchain dependency and output characteristics.
+
+---
 
 ## What is Tomatoware?
 
-Tomatoware is a modern, self-contained ARM cross-compilation toolchain. It allows you to compile the latest open-source packages for older ARM systems that were previously stuck on out-of-date toolchains. It provides up-to-date compilers, libraries, and utilities in a single environment, fully isolated from your host system. Using Tomatoware ensures that builds are reproducible and safe, without modifying or interfering with host libraries or binaries.
+Tomatoware is a modern, self-contained ARM cross-compilation toolchain. It allows you to compile up-to-date open-source software for older ARM systems that were previously limited to outdated toolchains.
+
+Tomatoware provides compilers, libraries, and utilities in a single, isolated environment, ensuring reproducible builds without modifying or interfering with host system libraries.
 
 ---
 
@@ -35,25 +65,40 @@ Tomatoware is a modern, self-contained ARM cross-compilation toolchain. It allow
    cd minidlna-arm-static
    ```
 
-2. **Run the build script**
+2. **Run the build script of your choice**
 
-   ```bash
-   ./minidlna-arm-static.sh
-   ```
+   - **Tomatoware build**:
 
-   This will build `minidlnad` as a **statically linked binary** under `/mmc/sbin`. You can copy this binary directly to your ARM target device.
+     ```bash
+     ./minidlna-arm-tomatoware.sh
+     ```
+
+   - **Musl build**:
+
+     ```bash
+     ./minidlna-arm-musl.sh
+     ```
+
+Both scripts build `minidlnad` as a **statically linked binary** under `/mmc/sbin`. You can copy the binary directly to your ARM target device.
+
+---
+
+## Notes on Older ARM Hardware
+
+Older ARM cores (ARM9, ARM11, early Cortex-A) are particularly sensitive to binary size, cache pressure, and memory overhead. For these systems, the **musl-based build** is generally the preferred option.
 
 ---
 
 ## Note on Building MiniDLNA
 
-Compiling MiniDLNA (and especially FFmpeg) on ARM devices can generate significant heat, often exceeding safe limits when using all CPU cores. If compiling on Raspberry Pi, upgrading to an aluminum case with copper shims and good thermal paste provides effective passive cooling, improving heat dissipation, keeping CPU temperatures lower, and preventing thermal throttling during long builds. But the critical part is the thermal interface between the Pi SoC and the case.
+Compiling MiniDLNA—especially FFmpeg—on ARM devices can generate significant heat, often exceeding safe limits when using all CPU cores.
 
-Copper shims conduct heat far better than thermal tape because:
-- Higher thermal conductivity – copper is ~400 W/m·K vs. ~0.5–1 W/m·K for thermal tape.
-- Consistent contact – when properly sized and used with a thin layer of thermal paste, the shim eliminates air gaps that would otherwise insulate the CPU.
-- Durability – they don’t compress or degrade over time like tape can.
+On Raspberry Pi systems, an aluminum case combined with **properly sized copper shims and thermal paste** provides effective passive cooling and prevents thermal throttling during long builds. Copper shims are particularly important because they create a low-resistance thermal path between the SoC and the case:
 
-So even if the aluminum case spreads heat okay, the copper shims are the “bridge” that actually gets the heat from the SoC to the case. It's why my Pi 3B temps dropped from ~80 °C to under 50 °C during compilation.
+- Much higher thermal conductivity than thermal tape (~400 W/m·K vs. ~0.5–1 W/m·K)
+- Consistent physical contact that eliminates insulating air gaps
+- No long-term compression or degradation
 
-For slower, cooler builds, you can compile using a single core by commenting/uncommenting the `MAKE` line in the build script.
+In testing, this reduced Raspberry Pi 3B CPU temperatures from approximately **80 °C to under 50 °C** during compilation.
+
+For slower, cooler builds, you can also limit parallelism by adjusting the `MAKE` line in the build script to use a single core.

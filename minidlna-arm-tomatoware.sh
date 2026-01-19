@@ -1020,10 +1020,11 @@ if [ ! -f "$PKG_SOURCE_SUBDIR/__package_installed" ]; then
     download "$PKG_SOURCE_URL" "$PKG_SOURCE" "."
     verify_hash "$PKG_SOURCE" "$PKG_HASH"
     unpack_archive "$PKG_SOURCE" "$PKG_SOURCE_SUBDIR"
-    if $MINIDLNA_THUMBNAILS_ENABLED; then
-        apply_patches "${SCRIPT_DIR}/patches/${PKG_NAME}/${PKG_SOURCE_SUBDIR}/entware" "$PKG_SOURCE_SUBDIR"
-    fi
     cd "$PKG_SOURCE_SUBDIR"
+
+    if ${MINIDLNA_THUMBNAILS_ENABLED}; then
+        apply_patches "${SCRIPT_DIR}/patches/${PKG_NAME}/${PKG_SOURCE_SUBDIR}/entware" "."
+    fi
 
     FFMPEG_DECODERS="aac ac3 atrac3 h264 jpegls mp3 mpeg1video mpeg2video mpeg4 mpegvideo png wmav1 wmav2 svq3"
     FFMPEG_PARSERS="aac ac3 h264 mpeg4video mpegaudio mpegvideo"
@@ -1077,8 +1078,9 @@ if [ ! -f "$PKG_SOURCE_SUBDIR/__package_installed" ]; then
     download "$PKG_SOURCE_URL" "$PKG_SOURCE" "."
     verify_hash "$PKG_SOURCE" "$PKG_HASH"
     unpack_archive "$PKG_SOURCE" "$PKG_SOURCE_SUBDIR"
-    apply_patches "${SCRIPT_DIR}/patches/${PKG_NAME}/${PKG_SOURCE_SUBDIR}/solartracker" "$PKG_SOURCE_SUBDIR"
     cd "$PKG_SOURCE_SUBDIR"
+
+    apply_patches "${SCRIPT_DIR}/patches/${PKG_NAME}/${PKG_SOURCE_SUBDIR}/solartracker" "."
 
     rm -rf build && mkdir -p build && cd build
 
@@ -1132,15 +1134,16 @@ if [ ! -f "$PKG_SOURCE_SUBDIR/__package_installed" ]; then
     download "$PKG_SOURCE_URL" "$PKG_SOURCE" "."
     verify_hash "$PKG_SOURCE" "$PKG_HASH"
     unpack_archive "$PKG_SOURCE" "$PKG_SOURCE_SUBDIR"
-    if $MINIDLNA_THUMBNAILS_ENABLED; then
-        apply_patches "${SCRIPT_DIR}/patches/${PKG_NAME}/${PKG_SOURCE_SUBDIR}/entware" "$PKG_SOURCE_SUBDIR"
-        apply_patches "${SCRIPT_DIR}/patches/${PKG_NAME}/${PKG_SOURCE_SUBDIR}/entware/solartracker" "$PKG_SOURCE_SUBDIR"
-    else
-        apply_patches "${SCRIPT_DIR}/patches/${PKG_NAME}/${PKG_SOURCE_SUBDIR}/solartracker" "$PKG_SOURCE_SUBDIR"
-    fi
     cd "$PKG_SOURCE_SUBDIR"
 
-    if $MINIDLNA_THUMBNAILS_ENABLED; then
+    if ${MINIDLNA_THUMBNAILS_ENABLED}; then
+        apply_patches "${SCRIPT_DIR}/patches/${PKG_NAME}/${PKG_SOURCE_SUBDIR}/entware" "."
+        apply_patches "${SCRIPT_DIR}/patches/${PKG_NAME}/${PKG_SOURCE_SUBDIR}/entware/solartracker" "."
+    else
+        apply_patches "${SCRIPT_DIR}/patches/${PKG_NAME}/${PKG_SOURCE_SUBDIR}/solartracker" "."
+    fi
+
+    if ${MINIDLNA_THUMBNAILS_ENABLED}; then
         LIBS="-lbz2 -lavfilter -ljpeg -lstdc++" \
         ./configure \
             --enable-static \

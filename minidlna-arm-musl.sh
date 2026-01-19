@@ -975,9 +975,9 @@ if [ ! -f "${PKG_SOURCE_SUBDIR}/__package_installed" ]; then
     download "${PKG_SOURCE_URL}" "${PKG_SOURCE}" "."
     verify_hash "${PKG_SOURCE}" "${PKG_HASH}"
     unpack_archive "${PKG_SOURCE}" "${PKG_SOURCE_SUBDIR}"
-    cp -p "${SCRIPT_DIR}/files/libid3tag/libid3tag-0.15.1b/solartracker/config.guess" "${PKG_SOURCE_SUBDIR}/"
-    cp -p "${SCRIPT_DIR}/files/libid3tag/libid3tag-0.15.1b/solartracker/config.sub" "${PKG_SOURCE_SUBDIR}/"
     cd "${PKG_SOURCE_SUBDIR}"
+    cp -p "${SCRIPT_DIR}/files/${PKG_NAME}/${PKG_SOURCE_SUBDIR}/solartracker/config.guess" "./"
+    cp -p "${SCRIPT_DIR}/files/${PKG_NAME}/${PKG_SOURCE_SUBDIR}/solartracker/config.sub" "./"
 
     ./configure \
         --enable-static \
@@ -1277,7 +1277,7 @@ if [ ! -f "${PKG_SOURCE_SUBDIR}/__package_installed" ]; then
     download "${PKG_SOURCE_URL}" "${PKG_SOURCE}" "."
     verify_hash "${PKG_SOURCE}" "${PKG_HASH}"
     unpack_archive "${PKG_SOURCE}" "${PKG_SOURCE_SUBDIR}"
-    if $MINIDLNA_THUMBNAILS_ENABLED; then
+    if ${MINIDLNA_THUMBNAILS_ENABLED}; then
         apply_patches "${SCRIPT_DIR}/patches/${PKG_NAME}/${PKG_SOURCE_SUBDIR}/entware" "${PKG_SOURCE_SUBDIR}"
         apply_patches "${SCRIPT_DIR}/patches/${PKG_NAME}/${PKG_SOURCE_SUBDIR}/entware/solartracker" "${PKG_SOURCE_SUBDIR}"
     else
@@ -1286,7 +1286,7 @@ if [ ! -f "${PKG_SOURCE_SUBDIR}/__package_installed" ]; then
     cd "${PKG_SOURCE_SUBDIR}"
 
     mkdir -p "${PREFIX}/include/sys"
-    cp -p "${SCRIPT_DIR}/files/${PKG_NAME}/${PKG_SOURCE_SUBDIR}/solartracker/uclibc-ng/include/sys/queue.h" "${PREFIX}/include/sys/"
+    cp -p "${SCRIPT_DIR}/files/${PKG_NAME}/${PKG_SOURCE_SUBDIR}/solartracker/uclibc-ng+git-bc4bc07d931992388822fa301e34718acbec02c9/include/sys/queue.h" "${PREFIX}/include/sys/"
 
     if $MINIDLNA_THUMBNAILS_ENABLED; then
         LIBS="-lbz2 -lavfilter -ljpeg -lstdc++" \

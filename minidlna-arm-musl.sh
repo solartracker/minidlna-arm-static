@@ -1315,7 +1315,7 @@ if [ ! -f "${PKG_SOURCE_SUBDIR}/__package_installed" ]; then
     mkdir -p "${PREFIX}/include/sys"
     cp -p "${SCRIPT_DIR}/files/${PKG_NAME}/${PKG_SOURCE_SUBDIR}/solartracker/uclibc-ng+git-bc4bc07d931992388822fa301e34718acbec02c9/include/sys/queue.h" "${PREFIX}/include/sys/"
 
-    if $MINIDLNA_THUMBNAILS_ENABLED; then
+    if ${MINIDLNA_THUMBNAILS_ENABLED}; then
         LIBS="-lbz2 -lavfilter -ljpeg -lstdc++" \
         ./configure \
             --enable-static \

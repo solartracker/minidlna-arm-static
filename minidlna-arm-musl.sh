@@ -1321,7 +1321,7 @@ if [ ! -f "${PKG_SOURCE_SUBDIR}/__package_installed" ]; then
             --enable-static \
             --disable-rpath \
             --disable-nls \
-            --enable-thumbnail \
+            --enable-thumbnail --disable-option-checking \
             --prefix="${PREFIX}" \
             --host="${HOST}" \
         || handle_configure_error $?

@@ -733,11 +733,11 @@ export AR=${CROSS_PREFIX}ar
 export RANLIB=${CROSS_PREFIX}ranlib
 export STRIP=${CROSS_PREFIX}strip
 
-export LDFLAGS="-L${PREFIX}/lib -Wl,--gc-sections"
-export CPPFLAGS="-I${PREFIX}/include -D_GNU_SOURCE"
 CFLAGS_COMMON="-O3 -march=armv7-a -mtune=cortex-a9 -marm -mfloat-abi=soft -mabi=aapcs-linux -fomit-frame-pointer -ffunction-sections -fdata-sections -pipe -Wall -fPIC"
 export CFLAGS="${CFLAGS_COMMON} -std=gnu99"
 export CXXFLAGS="${CFLAGS_COMMON} -std=gnu++17"
+export LDFLAGS="-L${PREFIX}/lib -Wl,--gc-sections"
+export CPPFLAGS="-I${PREFIX}/include -D_GNU_SOURCE"
 
 case "${HOST_CPU}" in
     armv7l)
@@ -748,8 +748,6 @@ case "${HOST_CPU}" in
         ;;
 esac
 
-#STAGEDIR="${CROSSBUILD_DIR}"
-#mkdir -p "${STAGEDIR}"
 SRC_ROOT="${CROSSBUILD_DIR}/src/${PKG_ROOT}"
 mkdir -p "${SRC_ROOT}"
 
@@ -1000,6 +998,7 @@ if [ ! -f "${PKG_SOURCE_SUBDIR}/__package_installed" ]; then
     verify_hash "${PKG_SOURCE}" "${PKG_HASH}"
     unpack_archive "${PKG_SOURCE}" "${PKG_SOURCE_SUBDIR}"
     cd "${PKG_SOURCE_SUBDIR}"
+
     cp -p "${SCRIPT_DIR}/files/${PKG_NAME}/${PKG_SOURCE_SUBDIR}/solartracker/config.guess" "./"
     cp -p "${SCRIPT_DIR}/files/${PKG_NAME}/${PKG_SOURCE_SUBDIR}/solartracker/config.sub" "./"
 
@@ -1095,10 +1094,10 @@ if [ ! -f "${PKG_SOURCE_SUBDIR}/__package_installed" ]; then
 fi
 )
 
+if ${MINIDLNA_THUMBNAILS_ENABLED}; then
 ################################################################################
 # libpng-1.6.53
 (
-if $MINIDLNA_THUMBNAILS_ENABLED; then
 PKG_NAME=libpng
 PKG_VERSION=1.6.53
 PKG_SOURCE="${PKG_NAME}-${PKG_VERSION}.tar.xz"
@@ -1131,8 +1130,8 @@ if [ ! -f "${PKG_SOURCE_SUBDIR}/__package_installed" ]; then
 
     touch __package_installed
 fi
-fi
 )
+fi
 
 ################################################################################
 # ffmpeg-6.1.2
@@ -1205,10 +1204,10 @@ if [ ! -f "${PKG_SOURCE_SUBDIR}/__package_installed" ]; then
 fi
 )
 
+if ${MINIDLNA_THUMBNAILS_ENABLED}; then
 ################################################################################
 # ffmpegthumbnailer-2.2.3
 (
-if $MINIDLNA_THUMBNAILS_ENABLED; then
 PKG_NAME=ffmpegthumbnailer
 PKG_VERSION=2.2.3
 PKG_SOURCE="${PKG_NAME}-${PKG_VERSION}.tar.gz"
@@ -1282,8 +1281,8 @@ if [ ! -f "${PKG_SOURCE_SUBDIR}/__package_installed" ]; then
 
     touch __package_installed
 fi
-fi
 )
+fi
 
 ################################################################################
 # minidlna-1.3.3

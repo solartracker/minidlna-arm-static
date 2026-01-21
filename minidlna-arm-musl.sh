@@ -735,7 +735,7 @@ export STRIP=${CROSS_PREFIX}strip
 
 export LDFLAGS="-L${PREFIX}/lib -Wl,--gc-sections"
 export CPPFLAGS="-I${PREFIX}/include -D_GNU_SOURCE"
-export CFLAGS_COMMON="-O3 -march=armv7-a -mtune=cortex-a9 -marm -mfloat-abi=soft -mabi=aapcs-linux -fomit-frame-pointer -ffunction-sections -fdata-sections -pipe -Wall -fPIC"
+CFLAGS_COMMON="-O3 -march=armv7-a -mtune=cortex-a9 -marm -mfloat-abi=soft -mabi=aapcs-linux -fomit-frame-pointer -ffunction-sections -fdata-sections -pipe -Wall -fPIC"
 export CFLAGS="${CFLAGS_COMMON} -std=gnu99"
 export CXXFLAGS="${CFLAGS_COMMON} -std=gnu++17"
 

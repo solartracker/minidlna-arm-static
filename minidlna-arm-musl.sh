@@ -723,9 +723,9 @@ PKG_ROOT=minidlna
 MINIDLNA_THUMBNAILS_ENABLED=true # enabling increases file size by about 2MB
 
 export PREFIX="${CROSSBUILD_DIR}"
-export PATH="${CROSSBUILD_DIR}/bin:${CROSSBUILD_DIR}/${TARGET}/bin:${PATH}"
 export HOST=${TARGET}
 export SYSROOT="${PREFIX}/${TARGET}"
+export PATH="${PATH}:${PREFIX}/bin:${SYSROOT}/bin"
 
 CROSS_PREFIX=${TARGET}-
 export CC=${CROSS_PREFIX}gcc

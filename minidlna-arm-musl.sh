@@ -1365,17 +1365,20 @@ if [ ! -f "${PKG_SOURCE_SUBDIR}/__package_installed" ]; then
     cd build
 
     cmake .. \
-      -DCMAKE_TOOLCHAIN_FILE=${SRC_ROOT}/arm-musl.toolchain.cmake \
-      -DCMAKE_INSTALL_PREFIX="${PREFIX}" \
-      -DCMAKE_PREFIX_PATH="${PREFIX}" \
-      -DENABLE_STATIC=ON \
-      -DENABLE_SHARED=OFF \
-      -DJPEG_LIBRARY="${PREFIX}/lib/libjpeg.a" \
-      -DPNG_LIBRARY="${PREFIX}/lib/libpng.a" \
-      -DZLIB_LIBRARY="${PREFIX}/lib/libz.a" \
-      -DBZIP2_LIBRARY="${PREFIX}/lib/libbz2.a" \
-      -DCMAKE_VERBOSE_MAKEFILE=ON \
-      -DCMAKE_EXE_LINKER_FLAGS="-static -static-libgcc -static-libstdc++"
+        -DCMAKE_TOOLCHAIN_FILE=${SRC_ROOT}/arm-musl.toolchain.cmake \
+        -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} \
+        -DCMAKE_VERBOSE_MAKEFILE=${CMAKE_VERBOSE_MAKEFILE} \
+        -DCMAKE_PREFIX_PATH="${PREFIX}" \
+        -DCMAKE_INSTALL_PREFIX="${PREFIX}" \
+        -DENABLE_STATIC=ON \
+        -DENABLE_SHARED=OFF \
+        -DJPEG_LIBRARY="${PREFIX}/lib/libjpeg.a" \
+        -DPNG_LIBRARY="${PREFIX}/lib/libpng.a" \
+        -DZLIB_LIBRARY="${PREFIX}/lib/libz.a" \
+        -DBZIP2_LIBRARY="${PREFIX}/lib/libbz2.a" \
+        -DBUILD_SHARED_LIBS=OFF \
+        -DCMAKE_FIND_LIBRARY_SUFFIXES=".a" \
+        -DCMAKE_EXE_LINKER_FLAGS="-static -static-libgcc -static-libstdc++"
 
     $MAKE
     make install

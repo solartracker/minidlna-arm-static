@@ -648,6 +648,22 @@ finalize_build() {
     return 0
 }
 
+# temporarily hide shared libraries (.so) to force cmake to use the static ones (.a)
+hide_shared_libraries() {
+    mv "${PREFIX}/lib_hidden/"* "${PREFIX}/lib/" || true
+    mkdir "${PREFIX}/lib_hidden" || true
+    mv "${PREFIX}/lib/"*".so"* "${PREFIX}/lib_hidden/" || true
+    mv "${PREFIX}/lib_hidden/libcc1."* "${PREFIX}/lib/" || true
+    return 0
+}
+
+# restore the hidden shared libraries
+restore_shared_libraries() {
+    mv "${PREFIX}/lib_hidden/"* "${PREFIX}/lib/" || true
+    rmdir "${PREFIX}/lib_hidden" || true
+    return 0
+}
+
 create_install_package()
 ( # BEGIN sub-shell
     [ "$#" -gt 0 ] || return 1
@@ -1341,6 +1357,9 @@ if [ ! -f "${PKG_SOURCE_SUBDIR}/__package_installed" ]; then
 
     apply_patches "${SCRIPT_DIR}/patches/${PKG_NAME}/${PKG_SOURCE_SUBDIR}/solartracker" "."
 
+    # temporarily hide shared libraries (.so) to force cmake to use static ones (.a)
+    hide_shared_libraries
+
     rm -rf build
     mkdir -p build
     cd build
@@ -1363,6 +1382,10 @@ if [ ! -f "${PKG_SOURCE_SUBDIR}/__package_installed" ]; then
 
     cd ..
 
+    # restore the hidden shared libraries
+    restore_shared_libraries
+
+    # install headers
     if [ ! -f "${PREFIX}/include/libffmpegthumbnailer/videothumbnailerc.h" ]; then
         mkdir -p "${PREFIX}/include/libffmpegthumbnailer"
         cp -p libffmpegthumbnailer/*.h "${PREFIX}/include/libffmpegthumbnailer/."

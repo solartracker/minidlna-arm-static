@@ -107,6 +107,7 @@ sign_file()
         #printf '\n'
         printf '%s  %s\n' "${target_file_hash}" "${target_file}"
     } >"${temp_path}" || return 1
+    chmod --reference="${target_path}" "${temp_path}" || return 1
     touch -r "${target_path}" "${temp_path}" || return 1
     mv -f "${temp_path}" "${sign_path}" || return 1
     # TODO: implement signing
@@ -549,6 +550,16 @@ get_latest_package() {
     return 0
 }
 
+contains() {
+    haystack=$1
+    needle=$2
+
+    case $haystack in
+        *"$needle"*) return 0 ;;
+        *)           return 1 ;;
+    esac
+}
+
 is_version_git() {
     case "$1" in
         *+git*)
@@ -637,6 +648,66 @@ finalize_build() {
     return 0
 }
 
+create_install_package()
+( # BEGIN sub-shell
+    [ "$#" -gt 0 ] || return 1
+    [ -n "$PKG_ROOT" ]            || return 1
+    [ -n "$PKG_ROOT_VERSION" ]    || return 1
+    [ -n "$PKG_ROOT_RELEASE" ]    || return 1
+    [ -n "$PKG_TARGET_CPU" ]      || return 1
+    [ -n "$CACHED_DIR" ]          || return 1
+
+    local pkg_files=""
+    for fmt in gz xz; do
+        local pkg_file="${PKG_ROOT}_${PKG_ROOT_VERSION}-${PKG_ROOT_RELEASE}_${PKG_TARGET_CPU}.tar.${fmt}"
+        local pkg_path="${CACHED_DIR}/${pkg_file}"
+        local temp_path=""
+        local timestamp=""
+        local compressor=""
+
+        case "$fmt" in
+            gz) compressor="gzip -9 -n" ;;
+            xz) compressor="xz -zc -7e -T0" ;;
+        esac
+
+        echo "[*] Creating the install package..."
+        mkdir -p "${CACHED_DIR}"
+        rm -f "${pkg_path}"
+        rm -f "${pkg_path}.sha256"
+        cleanup() { rm -f "${temp_path}"; }
+        trap 'cleanup; exit 130' INT
+        trap 'cleanup; exit 143' TERM
+        trap 'cleanup' EXIT
+        temp_path=$(mktemp "${pkg_path}.XXXXXX")
+        timestamp="@$(stat -c %Y "${PREFIX}/${1}")"
+        if ! tar --numeric-owner --owner=0 --group=0 --sort=name --mtime="${timestamp}" \
+                --transform "s|^|${PKG_ROOT}-${PKG_ROOT_VERSION}/|" \
+                -C "${PREFIX}" "$@" \
+                -cv | ${compressor} >"${temp_path}"; then
+            return 1
+        fi
+        touch -d "${timestamp}" "${temp_path}" || return 1
+        chmod 644 "${temp_path}" || return 1
+        mv -f "${temp_path}" "${pkg_path}" || return 1
+        trap - EXIT INT TERM
+        sign_file "${pkg_path}"
+
+        pkg_files="${pkg_files}${pkg_path}\n"
+    done
+
+    echo ""
+    echo ""
+    echo "[*] Finished."
+    echo ""
+    echo ""
+    echo "Install package is here:"
+    echo "${pkg_files}"
+    echo ""
+    echo ""
+
+    return 0
+) # END sub-shell
+
 
 ################################################################################
 # Install the build environment
@@ -719,6 +790,9 @@ fi
 # General
 
 PKG_ROOT=minidlna
+PKG_ROOT_VERSION="1.3.3"
+PKG_ROOT_RELEASE=1
+PKG_TARGET_CPU=armv7
 
 MINIDLNA_THUMBNAILS_ENABLED=true # enabling increases file size by about 2MB
 
@@ -1344,4 +1418,16 @@ if [ ! -f "${PKG_SOURCE_SUBDIR}/__package_installed" ]; then
     touch __package_installed
 fi
 )
+
+
+################################################################################
+# Create install package
+#
+set +x
+echo ""
+echo ""
+echo "[*] Finished building MiniDLNA ${PKG_ROOT_VERSION}"
+echo ""
+echo ""
+create_install_package "sbin/minidlnad"
 

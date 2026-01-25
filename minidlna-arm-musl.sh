@@ -832,6 +832,46 @@ export PKG_CONFIG="pkg-config"
 export PKG_CONFIG_LIBDIR="${PREFIX}/lib/pkgconfig"
 unset PKG_CONFIG_PATH
 
+if ${MINIDLNA_THUMBNAILS_ENABLED}; then
+# CMAKE options
+CMAKE_BUILD_TYPE="RelWithDebInfo"
+CMAKE_VERBOSE_MAKEFILE="YES"
+CMAKE_C_FLAGS="${CFLAGS}"
+CMAKE_CXX_FLAGS="${CXXFLAGS}"
+CMAKE_LD_FLAGS="${LDFLAGS}"
+CMAKE_CPP_FLAGS="${CPPFLAGS}"
+
+{
+    printf '%s\n' "# arm-musl.toolchain.cmake"
+    printf '%s\n' "set(CMAKE_SYSTEM_NAME Linux)"
+    printf '%s\n' "set(CMAKE_SYSTEM_PROCESSOR arm)"
+    printf '%s\n' ""
+    printf '%s\n' "# Cross-compiler"
+    printf '%s\n' "set(CMAKE_C_COMPILER arm-linux-musleabi-gcc)"
+    printf '%s\n' "set(CMAKE_CXX_COMPILER arm-linux-musleabi-g++)"
+    printf '%s\n' "set(CMAKE_AR arm-linux-musleabi-ar)"
+    printf '%s\n' "set(CMAKE_RANLIB arm-linux-musleabi-ranlib)"
+    printf '%s\n' "set(CMAKE_STRIP arm-linux-musleabi-strip)"
+    printf '%s\n' ""
+#    printf '%s\n' "# Optional: sysroot"
+#    printf '%s\n' "set(CMAKE_SYSROOT \"${SYSROOT}\")"
+    printf '%s\n' ""
+#    printf '%s\n' "# Avoid picking host libraries"
+#    printf '%s\n' "set(CMAKE_FIND_ROOT_PATH \"${PREFIX}\")"
+    printf '%s\n' ""
+#    printf '%s\n' "# Tell CMake to search only in sysroot"
+#    printf '%s\n' "set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)"
+#    printf '%s\n' "set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)"
+#    printf '%s\n' "set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)"
+    printf '%s\n' ""
+#    printf '%s\n' "set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY) # critical for skipping warning probes"
+#    printf '%s\n' ""
+    printf '%s\n' "set(CMAKE_C_STANDARD 11)"
+    printf '%s\n' "set(CMAKE_CXX_STANDARD 17)"
+    printf '%s\n' ""
+} >"${SRC_ROOT}/arm-musl.toolchain.cmake"
+fi # if ${MINIDLNA_THUMBNAILS_ENABLED}
+
 
 ################################################################################
 # zlib-1.3.1
@@ -1301,37 +1341,12 @@ if [ ! -f "${PKG_SOURCE_SUBDIR}/__package_installed" ]; then
 
     apply_patches "${SCRIPT_DIR}/patches/${PKG_NAME}/${PKG_SOURCE_SUBDIR}/solartracker" "."
 
-    {
-        printf '%s\n' "# toolchain.cmake"
-        printf '%s\n' "set(CMAKE_SYSTEM_NAME Linux)"
-        printf '%s\n' "set(CMAKE_SYSTEM_PROCESSOR arm)"
-        printf '%s\n' ""
-        printf '%s\n' "# Cross-compiler"
-        printf '%s\n' "set(CMAKE_C_COMPILER   \"${PREFIX}/bin/${CROSS_PREFIX}gcc\")"
-        printf '%s\n' "set(CMAKE_CXX_COMPILER \"${PREFIX}/bin/${CROSS_PREFIX}g++\")"
-        printf '%s\n' ""
-        printf '%s\n' "# Optional: sysroot"
-        printf '%s\n' "set(CMAKE_SYSROOT \"${PREFIX}\")"
-        printf '%s\n' ""
-        printf '%s\n' "# Ensure proper float ABI"
-        printf '%s\n' "set(CMAKE_C_FLAGS \"${CFLAGS}\")"
-        printf '%s\n' "set(CMAKE_CXX_FLAGS \"\${CMAKE_C_FLAGS}\")"
-        printf '%s\n' ""
-        printf '%s\n' "# Avoid picking host libraries"
-        printf '%s\n' "set(CMAKE_FIND_ROOT_PATH \"${PREFIX}\")"
-        printf '%s\n' ""
-        printf '%s\n' "# Tell CMake to search only in sysroot"
-        printf '%s\n' "set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)"
-        printf '%s\n' "set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)"
-        printf '%s\n' "set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)"
-    } >"toolchain.cmake"
-
     rm -rf build
     mkdir -p build
     cd build
 
     cmake .. \
-      -DCMAKE_TOOLCHAIN_FILE=../toolchain.cmake \
+      -DCMAKE_TOOLCHAIN_FILE=${SRC_ROOT}/arm-musl.toolchain.cmake \
       -DCMAKE_INSTALL_PREFIX="${PREFIX}" \
       -DCMAKE_PREFIX_PATH="${PREFIX}" \
       -DENABLE_STATIC=ON \

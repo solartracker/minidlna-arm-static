@@ -830,12 +830,15 @@ CROSS_PREFIX=${TARGET}-
 export CC=${CROSS_PREFIX}gcc
 export AR=${CROSS_PREFIX}ar
 export RANLIB=${CROSS_PREFIX}ranlib
-export STRIP=${CROSS_PREFIX}strip
+#export STRIP=${CROSS_PREFIX}strip
+export STRIP=true # explicitly disable stripping
 
-CFLAGS_COMMON="-O3 -march=armv7-a -mtune=cortex-a9 -marm -mfloat-abi=soft -mabi=aapcs-linux -fomit-frame-pointer -ffunction-sections -fdata-sections -pipe -Wall -fPIC"
-export CFLAGS="${CFLAGS_COMMON} -std=gnu99"
-export CXXFLAGS="${CFLAGS_COMMON} -std=gnu++17"
-export LDFLAGS="-L${PREFIX}/lib -Wl,--gc-sections"
+#CFLAGS_COMMON="-O3 -march=armv7-a -mtune=cortex-a9 -marm -mfloat-abi=soft -mabi=aapcs-linux -fomit-frame-pointer -ffunction-sections -fdata-sections -pipe -Wall -fPIC"
+CFLAGS_COMMON="-g3 -ggdb3 -O0 -fno-omit-frame-pointer -fno-inline -march=armv7-a -mtune=cortex-a9 -marm -mfloat-abi=soft -mabi=aapcs-linux -ffunction-sections -fdata-sections -pipe -Wall -fPIC"
+export CFLAGS="${CFLAGS_COMMON}"
+export CXXFLAGS="${CFLAGS_COMMON}"
+#export LDFLAGS="-L${PREFIX}/lib -Wl,--gc-sections"
+export LDFLAGS="-L${PREFIX}/lib -Wl,--gc-sections -Wl,--export-dynamic"
 export CPPFLAGS="-I${PREFIX}/include -D_GNU_SOURCE"
 
 case "${HOST_CPU}" in

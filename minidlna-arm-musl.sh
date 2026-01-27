@@ -819,7 +819,7 @@ PKG_ROOT_VERSION="1.3.3"
 PKG_ROOT_RELEASE=1
 PKG_TARGET_CPU=armv7
 
-MINIDLNA_THUMBNAILS_ENABLED=true # enabling increases file size by about 2MB
+MINIDLNA_THUMBNAILS_ENABLED=false # enabling increases file size by about 2MB
 
 export PREFIX="${CROSSBUILD_DIR}"
 export HOST=${TARGET}

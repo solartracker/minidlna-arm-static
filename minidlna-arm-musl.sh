@@ -37,8 +37,135 @@ PATH_CMD="$(readlink -f -- "$0")"
 SCRIPT_DIR="$(dirname -- "$(readlink -f -- "$0")")"
 PARENT_DIR="$(dirname -- "$(dirname -- "$(readlink -f -- "$0")")")"
 CACHED_DIR="${PARENT_DIR}/solartracker-sources"
+FILE_DOWNLOADER='use_wget'
+#FILE_DOWNLOADER='use_curl'
+#FILE_DOWNLOADER='use_curl_socks5_proxy'; CURL_SOCKS5_PROXY="192.168.1.1:9150"
 set -e
 set -x
+
+main() {
+PKG_ROOT=minidlna
+PKG_ROOT_VERSION="1.3.3"
+PKG_ROOT_RELEASE=1
+PKG_TARGET_CPU=armv7
+
+MINIDLNA_THUMBNAILS_ENABLED=false # enabling increases file size by about 2MB
+
+CROSSBUILD_SUBDIR="cross-arm-linux-musleabi-build"
+CROSSBUILD_DIR="${PARENT_DIR}/${CROSSBUILD_SUBDIR}"
+export TARGET=arm-linux-musleabi
+
+HOST_CPU="$(uname -m)"
+export PREFIX="${CROSSBUILD_DIR}"
+export HOST=${TARGET}
+export SYSROOT="${PREFIX}/${TARGET}"
+export PATH="${PATH}:${PREFIX}/bin:${SYSROOT}/bin"
+
+CROSS_PREFIX=${TARGET}-
+export CC=${CROSS_PREFIX}gcc
+export AR=${CROSS_PREFIX}ar
+export RANLIB=${CROSS_PREFIX}ranlib
+export STRIP=${CROSS_PREFIX}strip
+export READELF=${CROSS_PREFIX}readelf
+
+CFLAGS_COMMON="-O3 -march=armv7-a -mtune=cortex-a9 -marm -mfloat-abi=soft -mabi=aapcs-linux -fomit-frame-pointer -ffunction-sections -fdata-sections -pipe -Wall -fPIC"
+
+#CFLAGS_COMMON="-g3 -ggdb3 -O0 -fno-omit-frame-pointer -fno-inline -march=armv7-a -mtune=cortex-a9 -marm -mfloat-abi=soft -mabi=aapcs-linux -ffunction-sections -fdata-sections -pipe -Wall -fPIC"
+
+export CFLAGS="${CFLAGS_COMMON} -std=gnu99"
+export CXXFLAGS="${CFLAGS_COMMON} -std=gnu++17"
+export LDFLAGS="-L${PREFIX}/lib -Wl,--gc-sections"
+export CPPFLAGS="-I${PREFIX}/include -D_GNU_SOURCE"
+
+case "${HOST_CPU}" in
+    armv7l)
+        LDD="${SYSROOT}/lib/libc.so --list"
+        ;;
+    *)
+        LDD=true
+        ;;
+esac
+
+SRC_ROOT="${CROSSBUILD_DIR}/src/${PKG_ROOT}"
+mkdir -p "${SRC_ROOT}"
+
+MAKE="make -j$(grep -c ^processor /proc/cpuinfo)" # parallelism
+#MAKE="make -j1"                                  # one job at a time
+
+export PKG_CONFIG="pkg-config"
+export PKG_CONFIG_LIBDIR="${PREFIX}/lib/pkgconfig"
+unset PKG_CONFIG_PATH
+
+install_build_environment
+
+if ${MINIDLNA_THUMBNAILS_ENABLED}; then
+    create_cmake_toolchain_file
+fi
+
+download_and_compile
+
+create_install_package
+
+return 0
+}
+
+################################################################################
+# Create install package
+#
+create_install_package() {
+set +x
+echo ""
+echo "[*] Finished building MiniDLNA ${PKG_ROOT_VERSION}"
+echo ""
+add_items_to_install_package "sbin/minidlnad"
+
+return 0
+}
+
+################################################################################
+# CMake toolchain file
+#
+create_cmake_toolchain_file() {
+# CMAKE options
+CMAKE_BUILD_TYPE="RelWithDebInfo"
+CMAKE_VERBOSE_MAKEFILE="YES"
+CMAKE_C_FLAGS="${CFLAGS}"
+CMAKE_CXX_FLAGS="${CXXFLAGS}"
+CMAKE_LD_FLAGS="${LDFLAGS}"
+CMAKE_CPP_FLAGS="${CPPFLAGS}"
+
+{
+    printf '%s\n' "# toolchain.cmake"
+    printf '%s\n' "set(CMAKE_SYSTEM_NAME Linux)"
+    printf '%s\n' "set(CMAKE_SYSTEM_PROCESSOR arm)"
+    printf '%s\n' ""
+    printf '%s\n' "# Cross-compiler"
+    printf '%s\n' "set(CMAKE_C_COMPILER arm-linux-musleabi-gcc)"
+    printf '%s\n' "set(CMAKE_CXX_COMPILER arm-linux-musleabi-g++)"
+    printf '%s\n' "set(CMAKE_AR arm-linux-musleabi-ar)"
+    printf '%s\n' "set(CMAKE_RANLIB arm-linux-musleabi-ranlib)"
+    printf '%s\n' "set(CMAKE_STRIP arm-linux-musleabi-strip)"
+    printf '%s\n' ""
+#    printf '%s\n' "# Optional: sysroot"
+#    printf '%s\n' "set(CMAKE_SYSROOT \"${SYSROOT}\")"
+    printf '%s\n' ""
+#    printf '%s\n' "# Avoid picking host libraries"
+#    printf '%s\n' "set(CMAKE_FIND_ROOT_PATH \"${PREFIX}\")"
+    printf '%s\n' ""
+#    printf '%s\n' "# Tell CMake to search only in sysroot"
+#    printf '%s\n' "set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)"
+#    printf '%s\n' "set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)"
+#    printf '%s\n' "set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)"
+    printf '%s\n' ""
+#    printf '%s\n' "set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY) # critical for skipping warning probes"
+#    printf '%s\n' ""
+    printf '%s\n' "set(CMAKE_C_STANDARD 11)"
+    printf '%s\n' "set(CMAKE_CXX_STANDARD 17)"
+    printf '%s\n' ""
+} >"${PREFIX}/arm-musl.toolchain.cmake"
+
+return 0
+} #END create_cmake_toolchain_file
 
 ################################################################################
 # Helpers
@@ -85,9 +212,9 @@ sign_file()
 
     if [ -z "${option}" ]; then
         target_file_hash="$(sha256sum "${target_path}" | awk '{print $1}')"
-    elif [ "${option}" == "tar_extract" ]; then
-        target_file_hash="$(tar -xJOf "${target_path}" | sha256sum | awk '{print $1}')"
-    elif [ "${option}" == "xz_extract" ]; then
+    elif [ "${option}" = "full_extract" ]; then
+        target_file_hash="$(hash_archive "${target_path}")"
+    elif [ "${option}" = "xz_extract" ]; then
         target_file_hash="$(xz -dc "${target_path}" | sha256sum | awk '{print $1}')"
     else
         return 1
@@ -116,6 +243,53 @@ sign_file()
     return 0
 ) # END sub-shell
 
+hash_dir()
+( # BEGIN sub-shell
+    [ -n "$1" ] || return 1
+
+    dir_path="$1"
+
+    cleanup() { :; }
+    trap 'cleanup; exit 130' INT
+    trap 'cleanup; exit 143' TERM
+    trap 'cleanup' EXIT
+    cd "${dir_path}" || return 1
+    (
+        find ./ -type f | sort | while IFS= read -r f; do
+            set +x
+            echo "${f}"        # include the path
+            cat "${f}"         # include the contents
+        done
+    ) | sha256sum | awk '{print $1}'
+
+    return 0
+) # END sub-shell
+
+hash_archive()
+( # BEGIN sub-shell
+    [ -n "$1" ] || return 1
+
+    source_path="$1"
+    target_dir="$(dirname "${source_path}")"
+    target_file="$(basename "${source_path}")"
+
+    cd "${target_dir}" || return 1
+
+    cleanup() { rm -rf "${dir_tmp}"; }
+    trap 'cleanup; exit 130' INT
+    trap 'cleanup; exit 143' TERM
+    trap 'cleanup' EXIT
+    dir_tmp=$(mktemp -d "${target_file}.XXXXXX")
+    mkdir -p "${dir_tmp}"
+    if ! extract_package "${source_path}" "${dir_tmp}" >/dev/null 2>&1; then
+        return 1
+    else
+        hash_dir "${dir_tmp}"
+    fi
+
+    return 0
+) # END sub-shell
+
 # Checksum verification for downloaded file
 verify_hash() {
     [ -n "$1" ] || return 1
@@ -133,14 +307,12 @@ verify_hash() {
     fi
 
     if [ -z "${option}" ]; then
-        # hash the compressed binary file. this method is best when downloading
-        # compressed binary files.
+        # hash the compressed binary archive itself
         actual="$(sha256sum "${file_path}" | awk '{print $1}')"
-    elif [ "${option}" == "tar_extract" ]; then
-        # hash the data, file names, directory names. this method is best when
-        # archiving Github repos.
-        actual="$(tar -xJOf "${file_path}" | sha256sum | awk '{print $1}')"
-    elif [ "${option}" == "xz_extract" ]; then
+    elif [ "${option}" = "full_extract" ]; then
+        # hash the data inside the compressed binary archive
+        actual="$(hash_archive "${file_path}")"
+    elif [ "${option}" = "xz_extract" ]; then
         # hash the data, file names, directory names, timestamps, permissions, and
         # tar internal structures. this method is not as "future-proof" for archiving
         # Github repos because it is possible that the tar internal structures
@@ -205,7 +377,50 @@ retry() {
     done
 }
 
-wget_clean() {
+invoke_download_command() {
+    [ -n "$1" ]                   || return 1
+    [ -n "$2" ]                   || return 1
+
+    local temp_path="$1"
+    local source_url="$2"
+    case "${FILE_DOWNLOADER}" in
+        use_wget)
+            if ! wget -O "${temp_path}" \
+                      --tries=1 --retry-connrefused --waitretry=5 \
+                      "${source_url}"; then
+                return 1
+            fi
+            ;;
+        use_curl)
+            if ! curl --fail --retry 1 --retry-connrefused --retry-delay 5 \
+                      --output "$temp_path" \
+                      --remote-time \
+                      "$source_url"; then
+                return 1
+            fi
+            ;;
+        use_curl_socks5_proxy)
+            if [ -z "${CURL_SOCKS5_PROXY}" ]; then
+                echo "You must specify a SOCKS5 proxy for download command: ${FILE_DOWNLOADER}" >&2
+                return 1
+            fi
+            if ! curl --socks5-hostname ${CURL_SOCKS5_PROXY} \
+                      --fail --retry 1 --retry-connrefused --retry-delay 5 \
+                      --output "$temp_path" \
+                      --remote-time \
+                      "$source_url"; then
+                return 1
+            fi
+            ;;
+        *)
+            echo "Unsupported file download command: '${FILE_DOWNLOADER}'" >&2
+            return 1
+            ;;
+    esac
+    return 0
+}
+
+download_clean() {
     [ -n "$1" ]          || return 1
     [ -n "$2" ]          || return 1
     [ -n "$3" ]          || return 1
@@ -215,7 +430,7 @@ wget_clean() {
     local target_path="$3"
 
     rm -f "${temp_path}"
-    if ! wget -O "${temp_path}" --tries=1 --retry-connrefused --waitretry=5 "${source_url}"; then
+    if ! invoke_download_command "${temp_path}" "${source_url}"; then
         rm -f "${temp_path}"
         if [ -f "${target_path}" ]; then
             return 0
@@ -259,7 +474,7 @@ download()
             trap 'cleanup; exit 143' TERM
             trap 'cleanup' EXIT
             temp_path=$(mktemp "${cached_path}.XXXXXX")
-            if ! retry 1000 wget_clean "${temp_path}" "${source_url}" "${cached_path}"; then
+            if ! retry 1000 download_clean "${temp_path}" "${source_url}" "${cached_path}"; then
                 return 1
             fi
             trap - EXIT INT TERM
@@ -338,7 +553,7 @@ clone_github()
             mv -f "${temp_path}" "${cached_path}" || return 1
             rm -rf "${temp_dir}" || return 1
             trap - EXIT INT TERM
-            sign_file "${cached_path}"
+            sign_file "${cached_path}" "full_extract"
         else
             cleanup() { rm -f "${cached_path}"; }
             trap 'cleanup; exit 130' INT
@@ -673,7 +888,7 @@ restore_shared_libraries() {
     return 0
 }
 
-create_install_package()
+add_items_to_install_package()
 ( # BEGIN sub-shell
     [ "$#" -gt 0 ] || return 1
     [ -n "$PKG_ROOT" ]            || return 1
@@ -681,6 +896,19 @@ create_install_package()
     [ -n "$PKG_ROOT_RELEASE" ]    || return 1
     [ -n "$PKG_TARGET_CPU" ]      || return 1
     [ -n "$CACHED_DIR" ]          || return 1
+
+    echo "[*] Add items to install package..."
+    local ready=true
+    for f in "$@"; do
+        if [ -e "${PREFIX}/${f}" ]; then
+            echo "Found:   ${f}"
+        else
+            ready=false
+            echo "MISSING: ${f}"
+        fi
+    done
+    echo ""
+    ${ready} || return 1
 
     local pkg_files=""
     for fmt in gz xz; do
@@ -690,12 +918,12 @@ create_install_package()
         local timestamp=""
         local compressor=""
 
-        case "$fmt" in
+        case "${fmt}" in
             gz) compressor="gzip -9 -n" ;;
             xz) compressor="xz -zc -7e -T0" ;;
         esac
 
-        echo "[*] Creating the install package..."
+        echo "[*] Creating install package (.${fmt})..."
         mkdir -p "${CACHED_DIR}"
         rm -f "${pkg_path}"
         rm -f "${pkg_path}.sha256"
@@ -715,35 +943,28 @@ create_install_package()
         chmod 644 "${temp_path}" || return 1
         mv -f "${temp_path}" "${pkg_path}" || return 1
         trap - EXIT INT TERM
+        echo ""
         sign_file "${pkg_path}"
 
         pkg_files="${pkg_files}${pkg_path}\n"
     done
 
+    echo "[*] Finished creating the install package."
     echo ""
-    echo ""
-    echo "[*] Finished."
-    echo ""
-    echo ""
-    echo "Install package is here:"
+    echo "[*] Install package is here:"
     echo "${pkg_files}"
-    echo ""
     echo ""
 
     return 0
 ) # END sub-shell
 
-
 ################################################################################
 # Install the build environment
 # ARM Linux musl Cross-Compiler v0.2.0
 #
-CROSSBUILD_SUBDIR="cross-arm-linux-musleabi-build"
-CROSSBUILD_DIR="${PARENT_DIR}/${CROSSBUILD_SUBDIR}"
-export TARGET=arm-linux-musleabi
+install_build_environment() {
 (
 PKG_NAME=cross-arm-linux-musleabi
-HOST_CPU="$(uname -m)"
 get_latest() { get_latest_package "${PKG_NAME}-${HOST_CPU}-" "??????????????" ".tar.xz"; }
 #PKG_VERSION="$(get_latest)" # this line will fail if you did not build a toolchain yourself
 PKG_VERSION=0.2.0 # this line will cause a toolchain to be downloaded from Github
@@ -809,99 +1030,9 @@ if [ ! -x "${CROSSBUILD_DIR}/${TARGET}/lib/libc.so" ]; then
     exit 1
 fi
 )
+}
 
-
-################################################################################
-# General
-
-PKG_ROOT=minidlna
-PKG_ROOT_VERSION="1.3.3"
-PKG_ROOT_RELEASE=1
-PKG_TARGET_CPU=armv7
-
-MINIDLNA_THUMBNAILS_ENABLED=false # enabling increases file size by about 2MB
-
-export PREFIX="${CROSSBUILD_DIR}"
-export HOST=${TARGET}
-export SYSROOT="${PREFIX}/${TARGET}"
-export PATH="${PATH}:${PREFIX}/bin:${SYSROOT}/bin"
-
-CROSS_PREFIX=${TARGET}-
-export CC=${CROSS_PREFIX}gcc
-export AR=${CROSS_PREFIX}ar
-export RANLIB=${CROSS_PREFIX}ranlib
-#export STRIP=${CROSS_PREFIX}strip
-export STRIP=true # explicitly disable stripping
-export READELF=${CROSS_PREFIX}readelf
-
-#CFLAGS_COMMON="-O3 -march=armv7-a -mtune=cortex-a9 -marm -mfloat-abi=soft -mabi=aapcs-linux -fomit-frame-pointer -ffunction-sections -fdata-sections -pipe -Wall -fPIC"
-CFLAGS_COMMON="-g3 -ggdb3 -O0 -fno-omit-frame-pointer -fno-inline -march=armv7-a -mtune=cortex-a9 -marm -mfloat-abi=soft -mabi=aapcs-linux -ffunction-sections -fdata-sections -pipe -Wall -fPIC"
-export CFLAGS="${CFLAGS_COMMON}"
-export CXXFLAGS="${CFLAGS_COMMON}"
-#export LDFLAGS="-L${PREFIX}/lib -Wl,--gc-sections"
-export LDFLAGS="-L${PREFIX}/lib -Wl,--gc-sections -Wl,--export-dynamic"
-export CPPFLAGS="-I${PREFIX}/include -D_GNU_SOURCE"
-
-case "${HOST_CPU}" in
-    armv7l)
-        LDD="${SYSROOT}/lib/libc.so --list"
-        ;;
-    *)
-        LDD="ldd"
-        ;;
-esac
-
-SRC_ROOT="${CROSSBUILD_DIR}/src/${PKG_ROOT}"
-mkdir -p "${SRC_ROOT}"
-
-MAKE="make -j$(grep -c ^processor /proc/cpuinfo)" # parallelism
-#MAKE="make -j1"                                  # one job at a time
-
-export PKG_CONFIG="pkg-config"
-export PKG_CONFIG_LIBDIR="${PREFIX}/lib/pkgconfig"
-unset PKG_CONFIG_PATH
-
-if ${MINIDLNA_THUMBNAILS_ENABLED}; then
-# CMAKE options
-CMAKE_BUILD_TYPE="RelWithDebInfo"
-CMAKE_VERBOSE_MAKEFILE="YES"
-CMAKE_C_FLAGS="${CFLAGS}"
-CMAKE_CXX_FLAGS="${CXXFLAGS}"
-CMAKE_LD_FLAGS="${LDFLAGS}"
-CMAKE_CPP_FLAGS="${CPPFLAGS}"
-
-{
-    printf '%s\n' "# arm-musl.toolchain.cmake"
-    printf '%s\n' "set(CMAKE_SYSTEM_NAME Linux)"
-    printf '%s\n' "set(CMAKE_SYSTEM_PROCESSOR arm)"
-    printf '%s\n' ""
-    printf '%s\n' "# Cross-compiler"
-    printf '%s\n' "set(CMAKE_C_COMPILER arm-linux-musleabi-gcc)"
-    printf '%s\n' "set(CMAKE_CXX_COMPILER arm-linux-musleabi-g++)"
-    printf '%s\n' "set(CMAKE_AR arm-linux-musleabi-ar)"
-    printf '%s\n' "set(CMAKE_RANLIB arm-linux-musleabi-ranlib)"
-    printf '%s\n' "set(CMAKE_STRIP arm-linux-musleabi-strip)"
-    printf '%s\n' ""
-#    printf '%s\n' "# Optional: sysroot"
-#    printf '%s\n' "set(CMAKE_SYSROOT \"${SYSROOT}\")"
-    printf '%s\n' ""
-#    printf '%s\n' "# Avoid picking host libraries"
-#    printf '%s\n' "set(CMAKE_FIND_ROOT_PATH \"${PREFIX}\")"
-    printf '%s\n' ""
-#    printf '%s\n' "# Tell CMake to search only in sysroot"
-#    printf '%s\n' "set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)"
-#    printf '%s\n' "set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)"
-#    printf '%s\n' "set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)"
-    printf '%s\n' ""
-#    printf '%s\n' "set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY) # critical for skipping warning probes"
-#    printf '%s\n' ""
-    printf '%s\n' "set(CMAKE_C_STANDARD 11)"
-    printf '%s\n' "set(CMAKE_CXX_STANDARD 17)"
-    printf '%s\n' ""
-} >"${SRC_ROOT}/arm-musl.toolchain.cmake"
-fi # if ${MINIDLNA_THUMBNAILS_ENABLED}
-
-
+download_and_compile() {
 ################################################################################
 # zlib-1.3.1
 (
@@ -1473,15 +1604,12 @@ if [ ! -f "${PKG_SOURCE_SUBDIR}/__package_installed" ]; then
 fi
 )
 
+return 0
+} #END download_and_compile
 
-################################################################################
-# Create install package
-#
-set +x
+
+main
 echo ""
+echo "[*] Script exited cleanly."
 echo ""
-echo "[*] Finished building MiniDLNA ${PKG_ROOT_VERSION}"
-echo ""
-echo ""
-create_install_package "sbin/minidlnad"
 

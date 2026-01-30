@@ -1446,7 +1446,7 @@ if [ ! -f "${PKG_SOURCE_SUBDIR}/__package_installed" ]; then
         --disable-decoders $(ffmpeg_options "--enable-decoder" "$FFMPEG_DECODERS") \
         --disable-parsers $(ffmpeg_options "--enable-parser" "$FFMPEG_PARSERS") \
         --disable-protocols $(ffmpeg_options "--enable-protocol" "$FFMPEG_PROTOCOLS") \
-        --enable-zlib \
+        --enable-zlib --disable-iconv \
         --prefix="${PREFIX}" \
     || handle_configure_error $?
 

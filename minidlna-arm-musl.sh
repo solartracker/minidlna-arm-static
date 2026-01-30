@@ -1558,6 +1558,7 @@ if [ ! -f "${PKG_SOURCE_SUBDIR}/__package_installed" ]; then
             --enable-static \
             --disable-rpath \
             --disable-nls \
+            --without-libiconv-prefix \
             --enable-thumbnail --disable-option-checking \
             --prefix="${PREFIX}" \
             --host="${HOST}" \
@@ -1568,6 +1569,7 @@ if [ ! -f "${PKG_SOURCE_SUBDIR}/__package_installed" ]; then
             --enable-static \
             --disable-rpath \
             --disable-nls \
+            --without-libiconv-prefix \
             --prefix="${PREFIX}" \
             --host="${HOST}" \
         || handle_configure_error $?

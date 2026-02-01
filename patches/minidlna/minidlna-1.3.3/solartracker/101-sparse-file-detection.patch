@@ -1,0 +1,39 @@
+--- a/monitor.c	2026-01-31 22:57:20.795791811 -0500
++++ b/monitor.c	2026-02-01 09:45:11.068377759 -0500
+@@ -267,27 +267,19 @@
+ 
+ static bool
+ check_notsparse(const char *path)
+-#if HAVE_DECL_SEEK_HOLE
+ {
+-	int fd;
+-	bool rv;
++        struct stat st;
+ 
+-	if ((fd = open(path, O_RDONLY)) == -1)
+-		return (false);
+-	if (lseek(fd, 0, SEEK_HOLE) == lseek(fd, 0, SEEK_END))
+-		rv = true;
+-	else
+-		rv = false;
+-	close(fd);
+-	return (rv);
+-}
+-#else
+-{
+-	struct stat st;
++        /*
++         * Sparse files are valid on modern filesystems and should not
++         * be filtered out. DLNA clients already tolerate sparse regions.
++         * Only verify that this is a readable regular file.
++         */
++        if (stat(path, &st) != 0)
++                return false;
+ 
+-	return (stat(path, &st) == 0 && (st.st_blocks << 9 >= st.st_size));
++        return S_ISREG(st.st_mode);
+ }
+-#endif
+ 
+ int
+ monitor_insert_directory(int fd, char *name, const char * path)

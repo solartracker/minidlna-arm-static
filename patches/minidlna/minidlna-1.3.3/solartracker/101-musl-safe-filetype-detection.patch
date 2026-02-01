@@ -1,5 +1,5 @@
 --- a/monitor.c	2026-01-31 22:57:20.795791811 -0500
-+++ b/monitor.c	2026-02-01 00:07:09.760595330 -0500
++++ b/monitor.c	2026-02-01 06:59:16.167583915 -0500
 @@ -294,6 +294,7 @@
  {
  	DIR * ds;
@@ -17,7 +17,7 @@
  
  	ds = opendir(path);
  	if( !ds )
-@@ -337,19 +338,32 @@
+@@ -337,19 +338,33 @@
  	}
  	while( !quitting && (e = readdir(ds)) )
  	{
@@ -29,6 +29,7 @@
  		snprintf(path_buf, sizeof(path_buf), "%s/%s", path, e->d_name);
 -		switch( e->d_type )
 +		/* --- New musl-safe type detection --- */
++		DPRINTF(E_WARN, L_INOTIFY, "---Enumerating directory items: %s\n", path_buf);
 +		if( e->d_type == DT_UNKNOWN )
 +		{
 +		    if( lstat(path_buf, &st) == 0 )

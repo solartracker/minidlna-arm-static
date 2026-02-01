@@ -1,5 +1,5 @@
 --- a/monitor.c	2026-01-31 22:57:20.795791811 -0500
-+++ b/monitor.c	2026-01-31 23:10:15.069135418 -0500
++++ b/monitor.c	2026-01-31 23:26:08.890723675 -0500
 @@ -294,6 +294,7 @@
  {
  	DIR * ds;
@@ -8,21 +8,20 @@
  	char *id, *parent_buf, *esc_name;
  	char path_buf[PATH_MAX];
  	enum file_types type = TYPE_UNKNOWN;
-@@ -341,15 +342,26 @@
+@@ -337,19 +338,32 @@
+ 	}
+ 	while( !quitting && (e = readdir(ds)) )
+ 	{
++		type = TYPE_UNKNOWN;
++
+ 		if( e->d_name[0] == '.' )
  			continue;
  		esc_name = escape_tag(e->d_name, 1);
  		snprintf(path_buf, sizeof(path_buf), "%s/%s", path, e->d_name);
 -		switch( e->d_type )
 +		/* --- New musl-safe type detection --- */
 +		if( e->d_type == DT_UNKNOWN )
- 		{
--			case DT_DIR:
--			case DT_REG:
--			case DT_LNK:
--			case DT_UNKNOWN:
--				type = resolve_unknown_type(path_buf, dir_types);
--			default:
--				break;
++		{
 +		    if( lstat(path_buf, &st) == 0 )
 +		    {
 +		        if( S_ISDIR(st.st_mode) )
@@ -38,7 +37,14 @@
 +		    }
 +		}
 +		else
-+		{
+ 		{
+-			case DT_DIR:
+-			case DT_REG:
+-			case DT_LNK:
+-			case DT_UNKNOWN:
+-				type = resolve_unknown_type(path_buf, dir_types);
+-			default:
+-				break;
 +		    type = resolve_unknown_type(path_buf, dir_types);
  		}
  		if( type == TYPE_DIR )

@@ -1,6 +1,15 @@
 --- a/monitor.c	2026-01-31 22:57:20.795791811 -0500
-+++ b/monitor.c	2026-02-01 06:59:16.167583915 -0500
-@@ -294,6 +294,7 @@
++++ b/monitor.c	2026-02-01 08:12:24.649568327 -0500
+@@ -152,6 +152,8 @@
+ 	media_types mtype = get_media_type(path);
+ 	struct stat st;
+ 
++	DPRINTF(E_WARN, L_INOTIFY, "---ENTERING monitor_insert_file: esc_name='%s' path_buf='%s'\n", name, path);
++
+ 	/* Is it cover art for another file? */
+ 	if (mtype == TYPE_IMAGE)
+ 		update_if_album_art(path);
+@@ -294,11 +296,13 @@
  {
  	DIR * ds;
  	struct dirent * e;
@@ -8,19 +17,28 @@
  	char *id, *parent_buf, *esc_name;
  	char path_buf[PATH_MAX];
  	enum file_types type = TYPE_UNKNOWN;
-@@ -327,7 +328,7 @@
+ 	media_types dir_types;
+ 
++	DPRINTF(E_WARN, L_INOTIFY, "---ENTERING monitor_insert_directory: esc_name='%s' path_buf='%s'\n", esc_name, path_buf);
+ 	if( access(path, R_OK|X_OK) != 0 )
+ 	{
+ 		DPRINTF(E_WARN, L_INOTIFY, "Could not access %s [%s]\n", path, strerror(errno));
+@@ -327,8 +331,9 @@
  		monitor_add_watch(fd, path);
  #endif
  
 -	dir_types = valid_media_types(path);
 +	dir_types = ALL_MEDIA; //valid_media_types(path);
  
++	DPRINTF(E_WARN, L_INOTIFY, "---opendir(%s)\n", path);
  	ds = opendir(path);
  	if( !ds )
-@@ -337,19 +338,33 @@
+ 	{
+@@ -337,20 +342,36 @@
  	}
  	while( !quitting && (e = readdir(ds)) )
  	{
++		DPRINTF(E_WARN, L_INOTIFY, "------Enumerating directory items: %s\n", e->d_name);
 +		type = TYPE_UNKNOWN;
 +
  		if( e->d_name[0] == '.' )
@@ -28,10 +46,17 @@
  		esc_name = escape_tag(e->d_name, 1);
  		snprintf(path_buf, sizeof(path_buf), "%s/%s", path, e->d_name);
 -		switch( e->d_type )
++
 +		/* --- New musl-safe type detection --- */
-+		DPRINTF(E_WARN, L_INOTIFY, "---Enumerating directory items: %s\n", path_buf);
 +		if( e->d_type == DT_UNKNOWN )
-+		{
+ 		{
+-			case DT_DIR:
+-			case DT_REG:
+-			case DT_LNK:
+-			case DT_UNKNOWN:
+-				type = resolve_unknown_type(path_buf, dir_types);
+-			default:
+-				break;
 +		    if( lstat(path_buf, &st) == 0 )
 +		    {
 +		        if( S_ISDIR(st.st_mode) )
@@ -47,15 +72,10 @@
 +		    }
 +		}
 +		else
- 		{
--			case DT_DIR:
--			case DT_REG:
--			case DT_LNK:
--			case DT_UNKNOWN:
--				type = resolve_unknown_type(path_buf, dir_types);
--			default:
--				break;
++		{
 +		    type = resolve_unknown_type(path_buf, dir_types);
  		}
++
  		if( type == TYPE_DIR )
  		{
+ 			monitor_insert_directory(fd, esc_name, path_buf);

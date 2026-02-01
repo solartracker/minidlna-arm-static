@@ -1,5 +1,5 @@
 --- a/monitor.c	2026-01-31 22:57:20.795791811 -0500
-+++ b/monitor.c	2026-02-01 08:43:29.282480252 -0500
++++ b/monitor.c	2026-02-01 09:04:02.590567111 -0500
 @@ -137,6 +137,8 @@
  int
  monitor_insert_file(const char *name, const char *path)
@@ -31,7 +31,7 @@
  	ds = opendir(path);
  	if( !ds )
  	{
-@@ -337,20 +342,36 @@
+@@ -337,25 +342,41 @@
  	}
  	while( !quitting && (e = readdir(ds)) )
  	{
@@ -76,3 +76,9 @@
  		if( type == TYPE_DIR )
  		{
  			monitor_insert_directory(fd, esc_name, path_buf);
+ 		}
+-		else if( type == TYPE_FILE && check_notsparse(path_buf)) {
++		else if( type == TYPE_FILE /*&& check_notsparse(path_buf)*/) {
+ 			monitor_insert_file(esc_name, path_buf);
+ 		}
+ 		free(esc_name);

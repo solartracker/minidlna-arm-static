@@ -1,0 +1,12 @@
+--- a/monitor_inotify.c	2023-05-31 04:25:59.000000000 -0400
++++ b/monitor_inotify.c	2026-01-31 21:49:48.736133273 -0500
+@@ -333,6 +333,9 @@
+ 					DPRINTF(E_DEBUG, L_INOTIFY,  "The directory %s was %s.\n",
+ 						path_buf, (event->mask & IN_MOVED_TO ? "moved here" : "created"));
+ 					monitor_insert_directory(pollfds[0].fd, esc_name, path_buf);
++
++					/* new: scan existing files in the directory */
++					scan_dir(path_buf);
+ 				}
+ 				else if ( (event->mask & (IN_CLOSE_WRITE|IN_MOVED_TO|IN_CREATE)) &&
+ 				          (lstat(path_buf, &st) == 0) )

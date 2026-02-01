@@ -1,5 +1,5 @@
 --- a/monitor.c	2026-01-31 22:57:20.795791811 -0500
-+++ b/monitor.c	2026-01-31 23:26:08.890723675 -0500
++++ b/monitor.c	2026-02-01 00:07:09.760595330 -0500
 @@ -294,6 +294,7 @@
  {
  	DIR * ds;
@@ -8,6 +8,15 @@
  	char *id, *parent_buf, *esc_name;
  	char path_buf[PATH_MAX];
  	enum file_types type = TYPE_UNKNOWN;
+@@ -327,7 +328,7 @@
+ 		monitor_add_watch(fd, path);
+ #endif
+ 
+-	dir_types = valid_media_types(path);
++	dir_types = ALL_MEDIA; //valid_media_types(path);
+ 
+ 	ds = opendir(path);
+ 	if( !ds )
 @@ -337,19 +338,32 @@
  	}
  	while( !quitting && (e = readdir(ds)) )

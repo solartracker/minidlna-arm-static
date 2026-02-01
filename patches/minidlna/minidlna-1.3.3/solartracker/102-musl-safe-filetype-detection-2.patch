@@ -1,0 +1,11 @@
+--- a/utils.c	2026-02-01 00:23:51.681941507 -0500
++++ b/utils.c	2026-02-01 00:26:45.350331773 -0500
+@@ -494,6 +494,8 @@
+ 
+ 	if( lstat(path, &entry) == 0 )
+ 	{
++		DPRINTF(E_DEBUG, L_GENERAL, "resolve_unknown_type: %s\n", path);
++
+ 		if( S_ISLNK(entry.st_mode) )
+ 		{
+ 			if( (len = readlink(path, str_buf, PATH_MAX-1)) > 0 )

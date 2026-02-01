@@ -1,28 +1,25 @@
 --- a/monitor.c	2026-01-31 22:57:20.795791811 -0500
-+++ b/monitor.c	2026-02-01 08:12:24.649568327 -0500
-@@ -152,6 +152,8 @@
- 	media_types mtype = get_media_type(path);
- 	struct stat st;
- 
-+	DPRINTF(E_WARN, L_INOTIFY, "---ENTERING monitor_insert_file: esc_name='%s' path_buf='%s'\n", name, path);
-+
- 	/* Is it cover art for another file? */
- 	if (mtype == TYPE_IMAGE)
- 		update_if_album_art(path);
-@@ -294,11 +296,13 @@
++++ b/monitor.c	2026-02-01 08:43:29.282480252 -0500
+@@ -137,6 +137,8 @@
+ int
+ monitor_insert_file(const char *name, const char *path)
  {
++	DPRINTF(E_WARN, L_INOTIFY, "---ENTERING monitor_insert_file: name='%s' path='%s'\n", name, path);
++
+ 	int len;
+ 	char *last_dir;
+ 	char *path_buf;
+@@ -292,8 +294,10 @@
+ int
+ monitor_insert_directory(int fd, char *name, const char * path)
+ {
++	DPRINTF(E_WARN, L_INOTIFY, "---ENTERING monitor_insert_directory: name='%s' path='%s'\n", name, path);
  	DIR * ds;
  	struct dirent * e;
 +	struct stat st;
  	char *id, *parent_buf, *esc_name;
  	char path_buf[PATH_MAX];
  	enum file_types type = TYPE_UNKNOWN;
- 	media_types dir_types;
- 
-+	DPRINTF(E_WARN, L_INOTIFY, "---ENTERING monitor_insert_directory: esc_name='%s' path_buf='%s'\n", esc_name, path_buf);
- 	if( access(path, R_OK|X_OK) != 0 )
- 	{
- 		DPRINTF(E_WARN, L_INOTIFY, "Could not access %s [%s]\n", path, strerror(errno));
 @@ -327,8 +331,9 @@
  		monitor_add_watch(fd, path);
  #endif

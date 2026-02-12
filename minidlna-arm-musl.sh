@@ -935,17 +935,21 @@ finalize_build() {
 
 # temporarily hide shared libraries (.so) to force cmake to use the static ones (.a)
 hide_shared_libraries() {
-    mv -f "${PREFIX}/lib_hidden/"* "${PREFIX}/lib/" || true
+    if [ -d "${PREFIX}/lib_hidden" ]; then
+        mv -f "${PREFIX}/lib_hidden/"* "${PREFIX}/lib/" || true
+        rmdir "${PREFIX}/lib_hidden" || true
+    fi
     mkdir -p "${PREFIX}/lib_hidden" || true
     mv -f "${PREFIX}/lib/"*".so"* "${PREFIX}/lib_hidden/" || true
-    mv -f "${PREFIX}/lib_hidden/libcc1."* "${PREFIX}/lib/" || true
     return 0
 }
 
 # restore the hidden shared libraries
 restore_shared_libraries() {
-    mv -f "${PREFIX}/lib_hidden/"* "${PREFIX}/lib/" || true
-    rmdir "${PREFIX}/lib_hidden" || true
+    if [ -d "${PREFIX}/lib_hidden" ]; then
+        mv -f "${PREFIX}/lib_hidden/"* "${PREFIX}/lib/" || true
+        rmdir "${PREFIX}/lib_hidden" || true
+    fi
     return 0
 }
 

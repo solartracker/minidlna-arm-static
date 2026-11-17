@@ -37,7 +37,7 @@
 main() {
 PKG_ROOT=minidlna
 PKG_ROOT_VERSION="1.3.3"
-PKG_ROOT_RELEASE=2
+PKG_ROOT_RELEASE=3
 PKG_TARGET_CPU=armv7
 PKG_TARGET_VARIANT=
 MINIDLNA_THUMBNAILS_ENABLED=false # enabling increases file size by about 2MB
@@ -1196,14 +1196,14 @@ fi
 )
 
 ################################################################################
-# SQLite 3.51.2
+# SQLite 3.54.1
 (
 PKG_NAME=sqlite-autoconf
-PKG_VERSION=3510200
+PKG_VERSION=3540100
 PKG_SOURCE="${PKG_NAME}-${PKG_VERSION}.tar.gz"
 PKG_SOURCE_URL="https://sqlite.org/2026/${PKG_SOURCE}"
 PKG_SOURCE_SUBDIR="${PKG_NAME}-${PKG_VERSION}"
-PKG_HASH="fbd89f866b1403bb66a143065440089dd76100f2238314d92274a082d4f2b7bb"
+PKG_HASH="926ef8d3eab93fbf6e06011901273eec076b25594a4e1cdadd50c987f4f6d64e"
 
 mkdir -p "${SRC_ROOT}/${PKG_NAME}"
 cd "${SRC_ROOT}/${PKG_NAME}"
@@ -1221,6 +1221,11 @@ if [ ! -f "${PKG_SOURCE_SUBDIR}/__package_installed" ]; then
         --disable-shared \
         --enable-static \
         --disable-rpath \
+        --enable-threadsafe \
+        --disable-readline \
+        --disable-dependency-tracking \
+        --disable-load-extension \
+        --with-tempstore=no \
     || handle_configure_error $?
 
     $MAKE
